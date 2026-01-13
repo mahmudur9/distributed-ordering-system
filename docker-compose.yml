@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  product-service:
+    build:
+      context: ./ProductService
+      dockerfile: Dockerfile
+    image: product-service
+    container_name: product-service-api
+    ports:
+      - "8001:8000"
+      - "5001:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=ProductService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+    depends_on:
+      - sqlserver
+    networks:
+      - ordering-system-network
+      
+  order-service:
+    build:
+      context: ./OrderService
+      dockerfile: Dockerfile
+    image: order-service
+    container_name: order-service-api
+    ports:
+      - "8002:8000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=OrderService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+      - Grpc__ProductService=http://product-service-api:5000
+      - Grpc__PaymentService=http://payment-service-api:5000
+    depends_on:
+      - product-service
+    networks:
+      - ordering-system-network
+  
+  payment-service:
+    build:
+      context: ./PaymentService
+      dockerfile: Dockerfile
+    image: payment-service
+    container_name: payment-service-api
+    ports:
+      - "8003:8000"
+      - "5003:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=PaymentService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+    depends_on:
+      - order-service
+    networks:
+      - ordering-system-network
+      
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ordering-system-mssql
+    ports:
+      - "1435:1433"
+    environment:
+      SA_PASSWORD: "Mahmudur123"
+      ACCEPT_EULA: "Y"
+    networks:
+      - ordering-system-network
+
+networks:
+  ordering-system-network:

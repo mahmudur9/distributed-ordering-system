@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option csharp_namespace = "PaymentService.API";
+
+service PaymentGrpcService {
+  rpc CreatePayment (CreatePaymentGrpcRequest) returns (CreatePaymentGrpcResponse);
+}
+
+message CreatePaymentGrpcRequest {
+  string Amount = 1;
+  string OrderId = 2;
+  string PaymentTypeId = 3;
+  string PaymentMethodId = 4;
+}
+
+message CreatePaymentGrpcResponse {
+  bool success = 1;
+}
