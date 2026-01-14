@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using UserService.Application.IServices;
+using UserService.Application.Requests;
 
 namespace UserService.API.Controllers;
 
@@ -6,9 +8,16 @@ namespace UserService.API.Controllers;
 [ApiController]
 public class UsersController : ControllerBase
 {
-    [HttpGet]
-    public IActionResult Get()
+    private readonly IUserService _userService;
+
+    public UsersController(IUserService userService)
     {
-        return Ok("Users");
+        _userService = userService;
+    }
+
+    [HttpGet("GetAll")]
+    public async Task<IActionResult> GetAll(GetAllUsersFilter filter)
+    {
+        return Ok(await _userService.GetAllUsersAsync(filter));
     }
 }

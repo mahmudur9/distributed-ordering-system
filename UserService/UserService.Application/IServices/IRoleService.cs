@@ -1,6 +1,6 @@
 namespace UserService.Application.IServices;
 
-public class IRoleService
+public interface IRoleService
 {
     
 }
