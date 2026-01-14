@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ObjectStoreService.Domain\ObjectStoreService.Domain.csproj" />
+      <ProjectReference Include="..\ObjectStoreService.Infrastructure\ObjectStoreService.Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="AutoMapper\" />
+      <Folder Include="IServices\" />
+      <Folder Include="Requests\" />
+      <Folder Include="Responses\" />
+      <Folder Include="Services\" />
+    </ItemGroup>
+
+</Project>

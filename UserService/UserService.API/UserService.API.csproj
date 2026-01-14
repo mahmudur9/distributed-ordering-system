@@ -9,11 +9,15 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.22"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\UserService.Application\UserService.Application.csproj" />
-      <ProjectReference Include="..\UserService.Infrastructure\UserService.Infrastructure.csproj" />
+        <ProjectReference Include="..\UserService.Application\UserService.Application.csproj"/>
+        <ProjectReference Include="..\UserService.Infrastructure\UserService.Infrastructure.csproj"/>
     </ItemGroup>
 
 </Project>
