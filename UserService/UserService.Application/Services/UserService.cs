@@ -1,8 +1,10 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using UserService.Application.IServices;
 using UserService.Application.Requests;
 using UserService.Application.Responses;
 using UserService.Domain.IRepositories;
+using UserService.Domain.Models;
 
 namespace UserService.Application.Services;
 
@@ -10,11 +12,13 @@ public class UserService : IUserService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IAuthService _authService;
 
-    public UserService(IUnitOfWork unitOfWork, IMapper mapper)
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper, IAuthService authService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _authService = authService;
     }
 
     public async Task<PaginatedResponse<UserResponse>> GetAllUsersAsync(GetAllUsersFilter filter)
@@ -44,9 +48,23 @@ public class UserService : IUserService
         throw new NotImplementedException();
     }
 
-    public Task CreateUserAsync(UserRequest userRequest)
+    public async Task CreateUserAsync(UserRequest userRequest)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var role = await _unitOfWork.RoleRepository.GetByIdAsync(userRequest.RoleId);
+            if (role is null)
+            {
+                throw new Exception("Role not found");
+            }
+            userRequest.Password = _authService.GenerateHash(userRequest.Password);
+            await _unitOfWork.UserRepository.CreateAsync(_mapper.Map<User>(userRequest));
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
     }
 
     public Task UpdateUserAsync(Guid id, UserRequest userRequest)
@@ -57,5 +75,41 @@ public class UserService : IUserService
     public Task DeleteUserAsync(Guid id)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<LoginResponse> LoginAsync(LoginRequest loginRequest)
+    {
+        try
+        {
+            var user = await _unitOfWork.UserRepository.GetUserByEmailAsync(loginRequest.Email);
+            if (!_authService.VerifyPasswordHash(loginRequest.Password, user.Password))
+            {
+                throw new BadHttpRequestException("Incorrect email or password!");
+            }
+
+            var resposne = new LoginResponse()
+            {
+                Token = _authService.GenerateToken(user.Id, user.Email!, user.Role!.Name)
+            };
+            return resposne;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+
+    public async Task<UserResponse> AuthenticateAsync()
+    {
+        try
+        {
+            Guid userId = _authService.GetAuthenticatedUserId();
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
+            return _mapper.Map<UserResponse>(user);
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
     }
 }

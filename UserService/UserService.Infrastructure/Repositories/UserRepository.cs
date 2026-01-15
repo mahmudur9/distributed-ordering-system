@@ -41,4 +41,10 @@ public class UserRepository : Repository<User>, IUserRepository
 
         return await users.CountAsync();
     }
+
+    public async Task<User> GetUserByEmailAsync(string email)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
+        return user!;
+    }
 }

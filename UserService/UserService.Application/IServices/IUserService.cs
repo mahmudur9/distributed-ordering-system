@@ -10,4 +10,6 @@ public interface IUserService
     Task CreateUserAsync(UserRequest userRequest);
     Task UpdateUserAsync(Guid id, UserRequest userRequest);
     Task DeleteUserAsync(Guid id);
+    Task<LoginResponse> LoginAsync(LoginRequest loginRequest);
+    Task<UserResponse> AuthenticateAsync();
 }
