@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using UserService.Domain.IRepositories;
+using UserService.Infrastructure.BackgroundServices;
 using UserService.Infrastructure.Data;
 using UserService.Infrastructure.Repositories;
 
@@ -17,6 +18,12 @@ public static class InfrastructureServiceExtensions
         
         // Register repositories
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        
+        // Register background services
+        services.AddHostedService<BackgroundWorkerService>();
+        
+        // Register swagger
+        
 
         return services;
     }

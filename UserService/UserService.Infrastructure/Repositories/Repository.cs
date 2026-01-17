@@ -52,4 +52,9 @@ public class Repository<T> : IRepository<T> where T : class
     {
         await Task.Run(() => { _context.Set<T>().RemoveRange(models); });
     }
+
+    public async Task<int> GetAllCountAsync()
+    {
+        return await _context.Set<T>().CountAsync();
+    }
 }

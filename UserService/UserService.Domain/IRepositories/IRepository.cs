@@ -10,4 +10,5 @@ public interface IRepository<T> where T : class
     Task UpdateRangeAsync(IEnumerable<T> models);
     Task DeleteAsync(T model);
     Task DeleteRangeAsync(IEnumerable<T> models);
+    Task<int> GetAllCountAsync();
 }

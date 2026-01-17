@@ -104,7 +104,7 @@ public class UserService : IUserService
         try
         {
             Guid userId = _authService.GetAuthenticatedUserId();
-            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
+            var user = await _unitOfWork.UserRepository.GetUserByIdAsync(userId);
             return _mapper.Map<UserResponse>(user);
         }
         catch (Exception ex)

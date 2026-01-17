@@ -44,7 +44,13 @@ public class UserRepository : Repository<User>, IUserRepository
 
     public async Task<User> GetUserByEmailAsync(string email)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
+        var user = await _context.Users.Include(x => x.Role).AsNoTracking().FirstOrDefaultAsync(x => x.Email == email);
+        return user!;
+    }
+
+    public async Task<User> GetUserByIdAsync(Guid id)
+    {
+        var user = await _context.Users.Include(x => x.Role).AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
         return user!;
     }
 }

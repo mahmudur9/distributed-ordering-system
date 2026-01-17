@@ -22,8 +22,4 @@
         <PackageReference Include="Grpc.AspNetCore" Version="2.76.0" />
     </ItemGroup>
 
-    <ItemGroup>
-        <Folder Include="BackgroundServices\"/>
-    </ItemGroup>
-
 </Project>
