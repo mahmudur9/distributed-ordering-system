@@ -20,6 +20,8 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("GetAll")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(PaginatedResponse<UserResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] GetAllUsersFilter filter)
     {
         return Ok(await _userService.GetAllUsersAsync(filter));
@@ -33,6 +35,8 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("Login"), AllowAnonymous]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> Login(LoginRequest loginRequest)
     {
         return Ok(await _userService.LoginAsync(loginRequest));
@@ -44,5 +48,26 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> Authenticate()
     {
         return Ok(await _userService.AuthenticateAsync());
+    }
+
+    [HttpPut("Update/{id}")]
+    public async Task<IActionResult> Update(Guid id, UpdateUserRequest updateUserRequest)
+    {
+        await  _userService.UpdateUserAsync(id, updateUserRequest);
+        return Ok("User updated successfully");
+    }
+
+    [HttpPut("UpdatePassword/{id}")]
+    public async Task<IActionResult> UpdatePassword(Guid id, UpdatePasswordRequest updatePasswordRequest)
+    {
+        await _userService.UpdatePasswordAsync(id, updatePasswordRequest);
+        return Ok("Password updated successfully");
+    }
+
+    [HttpDelete("Delete/{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        await _userService.DeleteUserAsync(id);
+        return Ok("User deleted successfully");
     }
 }

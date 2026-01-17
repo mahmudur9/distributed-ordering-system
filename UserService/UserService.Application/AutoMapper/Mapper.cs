@@ -12,5 +12,7 @@ public class Mapper : Profile
         CreateMap<UserRequest, User>();
         CreateMap<User, UserResponse>()
             .ForMember(dest => dest.RoleName, src => src.MapFrom(s => s.Role!.Name));
+        
+        CreateMap<Role,  RoleResponse>();
     }
 }

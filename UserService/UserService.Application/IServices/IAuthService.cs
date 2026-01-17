@@ -6,4 +6,5 @@ public interface IAuthService
     bool VerifyPasswordHash(string password, string passwordHash);
     string GenerateHash(string password);
     Guid GetAuthenticatedUserId();
+    string GetAuthenticatedUserRole();
 }

@@ -5,6 +5,7 @@ using UserService.Application.Requests;
 using UserService.Application.Responses;
 using UserService.Domain.IRepositories;
 using UserService.Domain.Models;
+using UserService.Infrastructure.Constants;
 
 namespace UserService.Application.Services;
 
@@ -67,14 +68,87 @@ public class UserService : IUserService
         }
     }
 
-    public Task UpdateUserAsync(Guid id, UserRequest userRequest)
+    public async Task UpdateUserAsync(Guid id, UpdateUserRequest updateUserRequest)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+            if (user is null)
+            {
+                throw new Exception("User not found");
+            }
+
+            if (id != _authService.GetAuthenticatedUserId() && _authService.GetAuthenticatedUserRole() != Constants.AdminRole)
+            {
+                throw new UnauthorizedAccessException();
+            }
+            
+            user = _mapper.Map(updateUserRequest, user);
+            user.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.UserRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
     }
 
-    public Task DeleteUserAsync(Guid id)
+    public async Task DeleteUserAsync(Guid id)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+            if (user is null)
+            {
+                throw new Exception("User not found");
+            }
+
+            if (_authService.GetAuthenticatedUserRole() != Constants.AdminRole)
+            {
+                throw new UnauthorizedAccessException();
+            }
+            
+            user.IsActive = false;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.UserRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+
+    public async Task UpdatePasswordAsync(Guid id, UpdatePasswordRequest updatePasswordRequest)
+    {
+        try
+        {
+            if (id != _authService.GetAuthenticatedUserId())
+            {
+                throw new UnauthorizedAccessException();
+            }
+            
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+            if (user is null)
+            {
+                throw new Exception("User not found");
+            }
+            
+            if (!_authService.VerifyPasswordHash(updatePasswordRequest.CurrentPassword, user.Password))
+            {
+                throw new BadHttpRequestException("Incorrect current password!");
+            }
+            
+            user.Password = _authService.GenerateHash(updatePasswordRequest.NewPassword);
+            user.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.UserRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest loginRequest)

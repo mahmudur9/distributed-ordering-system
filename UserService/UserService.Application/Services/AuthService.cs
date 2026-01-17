@@ -89,4 +89,12 @@ public class AuthService : IAuthService
 
         return Guid.Parse(userId);
     }
+
+    public string GetAuthenticatedUserRole()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var identity = user?.Identity as ClaimsIdentity;
+        var userRole = identity!.Claims.FirstOrDefault(x => x.Type.Equals("Role"))!.Value;
+        return userRole;
+    }
 }

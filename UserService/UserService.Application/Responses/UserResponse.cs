@@ -1,6 +1,6 @@
 namespace UserService.Application.Responses;
 
-public class UserResponse
+public class UserResponse : ResponseBase
 {
     public string Name { get; set; }
     public string Email { get; set; }

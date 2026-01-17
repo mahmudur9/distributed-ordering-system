@@ -19,6 +19,7 @@ public static class ApplicationServiceExtensions
         // services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserService, Services.UserService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IRoleService, RoleService>();
 
         // Configure JWT Token
         services.AddAuthentication(x =>
