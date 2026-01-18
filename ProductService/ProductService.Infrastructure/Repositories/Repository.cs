@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using ProductService.Domain.IRepositories;
 using ProductService.Infrastructure.Data;
@@ -63,5 +64,45 @@ public class Repository<T> : IRepository<T> where T : class
         {
             _context.Set<T>().RemoveRange(models);
         });
+    }
+
+    public Task<int> CountAsync(Expression<Func<T, bool>>[] predicates)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        return query.CountAsync();
+    }
+
+    public Task<bool> AnyAsync(Expression<Func<T, bool>>[] predicates)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        return query.AnyAsync();
+    }
+
+    public Task<T> GetAsync(Expression<Func<T, bool>>[] predicates)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        return query.FirstOrDefaultAsync()!;
+    }
+
+    public Task<List<T>> GetAllAsync(Expression<Func<T, bool>>[] predicates)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        return query.ToListAsync();
     }
 }

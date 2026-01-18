@@ -80,7 +80,7 @@ public class UserService : IUserService
 
             if (id != _authService.GetAuthenticatedUserId() && _authService.GetAuthenticatedUserRole() != Constants.AdminRole)
             {
-                throw new UnauthorizedAccessException();
+                throw new UnauthorizedAccessException("Unauthorized");
             }
             
             user = _mapper.Map(updateUserRequest, user);
@@ -106,7 +106,7 @@ public class UserService : IUserService
 
             if (_authService.GetAuthenticatedUserRole() != Constants.AdminRole)
             {
-                throw new UnauthorizedAccessException();
+                throw new UnauthorizedAccessException("Unauthorized");
             }
             
             user.IsActive = false;
@@ -126,7 +126,7 @@ public class UserService : IUserService
         {
             if (id != _authService.GetAuthenticatedUserId())
             {
-                throw new UnauthorizedAccessException();
+                throw new UnauthorizedAccessException("Unauthorized");
             }
             
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);

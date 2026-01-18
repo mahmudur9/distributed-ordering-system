@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
@@ -104,6 +105,13 @@ public class CategoryService : ICategoryService
                 throw new Exception($"Category with id {id} not found");
             }
             
+            bool hasActiveProducts = await _unitOfWork.CategoryRepository
+                .AnyAsync([x => x.Id == id, 
+                    x => x.Products.Any(p => p.IsActive)]);
+            if (hasActiveProducts)
+            {
+                throw new Exception("You can not delete a category with active products!");
+            }
             category.IsActive = false;
             category.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.CategoryRepository.UpdateAsync(category);

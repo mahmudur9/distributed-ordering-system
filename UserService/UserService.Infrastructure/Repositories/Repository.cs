@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using UserService.Domain.IRepositories;
 using UserService.Infrastructure.Data;
@@ -56,5 +57,45 @@ public class Repository<T> : IRepository<T> where T : class
     public async Task<int> GetAllCountAsync()
     {
         return await _context.Set<T>().CountAsync();
+    }
+    
+    public Task<int> CountAsync(Expression<Func<T, bool>>[] predicates)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        return query.CountAsync();
+    }
+
+    public Task<bool> AnyAsync(Expression<Func<T, bool>>[] predicates)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        return query.AnyAsync();
+    }
+
+    public Task<T> GetAsync(Expression<Func<T, bool>>[] predicates)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        return query.FirstOrDefaultAsync()!;
+    }
+
+    public Task<List<T>> GetAllAsync(Expression<Func<T, bool>>[] predicates)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        return query.ToListAsync();
     }
 }
