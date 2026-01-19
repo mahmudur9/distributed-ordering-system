@@ -7,16 +7,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ObjectStoreService.Domain\ObjectStoreService.Domain.csproj" />
-      <ProjectReference Include="..\ObjectStoreService.Infrastructure\ObjectStoreService.Infrastructure.csproj" />
+        <ProjectReference Include="..\ObjectStoreService.Domain\ObjectStoreService.Domain.csproj"/>
+        <ProjectReference Include="..\ObjectStoreService.Infrastructure\ObjectStoreService.Infrastructure.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="AutoMapper\" />
-      <Folder Include="IServices\" />
-      <Folder Include="Requests\" />
-      <Folder Include="Responses\" />
-      <Folder Include="Services\" />
+        <PackageReference Include="AutoMapper" Version="13.0.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="IServices\"/>
+        <Folder Include="Services\"/>
     </ItemGroup>
 
 </Project>

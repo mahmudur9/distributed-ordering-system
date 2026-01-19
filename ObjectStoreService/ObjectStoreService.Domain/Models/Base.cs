@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace OrderService.Domain.Models;
+namespace ObjectStoreService.Domain.Models;
 
 public class Base
 {
