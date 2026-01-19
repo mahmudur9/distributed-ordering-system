@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using OrderService.API;
 using OrderService.Domain.IRepositories;
 using OrderService.Infrastructure.BackgroundServices;
 using OrderService.Infrastructure.Data;
 using OrderService.Infrastructure.Repositories;
 using PaymentService.API;
+using ProductService.API;
 
 namespace OrderService.Infrastructure.Extensions;
 
@@ -16,13 +16,14 @@ public static class InfrastructureServiceExtensions
         IConfiguration configuration)
     {
         // Register DBContext
-        services.AddDbContext<DBContext>(options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
-        
+        services.AddDbContext<DBContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+
         // Register repositories
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        
+
         // Register gRPC clients
-        services.AddGrpcClient<Greeter.GreeterClient>(o =>
+        services.AddGrpcClient<ProductGrpcService.ProductGrpcServiceClient>(o =>
         {
             o.Address = new Uri(configuration.GetRequiredSection("Grpc").GetValue<string>("ProductService")!);
         });
@@ -30,7 +31,7 @@ public static class InfrastructureServiceExtensions
         {
             o.Address = new Uri(configuration.GetRequiredSection("Grpc").GetValue<string>("PaymentService")!);
         });
-        
+
         // Register background services
         services.AddHostedService<Migration>();
 

@@ -34,6 +34,7 @@ public class PaymentGrpc : PaymentGrpcService.PaymentGrpcServiceBase
         catch (Exception ex)
         {
             response.Success = false;
+            response.Error = ex.Message;
             return response;
         }
     }

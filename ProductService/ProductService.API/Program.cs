@@ -56,7 +56,7 @@ app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
-app.MapGrpcService<GreeterService>();
+app.MapGrpcService<ProductGrpc>();
 app.MapControllers();
 
 app.Run();

@@ -22,15 +22,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="GrpcClients\Protos\greet.proto">
-            <GrpcServices>Client</GrpcServices>
-            <Access>Public</Access>
-            <ProtoCompile>True</ProtoCompile>
-            <CompileOutputs>True</CompileOutputs>
-            <OutputDir>obj\Debug/net8.0/</OutputDir>
-            <Generator>MSBuild:Compile</Generator>
-        </Protobuf>
         <Protobuf Include="GrpcClients\Protos\payment.proto" GrpcServices="Client" />
+        <Protobuf Include="GrpcClients\Protos\product.proto" GrpcServices="Client" />
     </ItemGroup>
 
 </Project>

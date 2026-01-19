@@ -15,4 +15,5 @@ message CreatePaymentGrpcRequest {
 
 message CreatePaymentGrpcResponse {
   bool success = 1;
+  string Error = 2;
 }

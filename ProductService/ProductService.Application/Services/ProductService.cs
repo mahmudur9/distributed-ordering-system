@@ -119,4 +119,53 @@ public class ProductService : IProductService
             throw ex;
         }
     }
+
+    public async Task VerifyAndUpdateProductStockAsync(List<UpdateProductStockRequest> updateProductStockRequest)
+    {
+        try
+        {
+            var products = await _unitOfWork.ProductRepository.GetAllAsync([x => 
+                updateProductStockRequest.Select(p => p.Id).Contains(x.Id) && x.IsActive]);
+
+            if (products.Count != updateProductStockRequest.Count())
+            {
+                throw new Exception("Some products are not available!");
+            }
+
+            await _unitOfWork.BeginTransactionAsync();
+
+            var productDict = new Dictionary<Guid, Tuple<int, decimal>>();
+            foreach (var productStockRequest in updateProductStockRequest)
+            {
+                productDict[productStockRequest.Id] = Tuple.Create(productStockRequest.Quantity, productStockRequest.Price);
+            }
+
+            foreach (var product in products)
+            {
+                if (product.SellingPrice != productDict[product.Id].Item2)
+                {
+                    throw new Exception("Price of some products doesn't match!");
+                }
+                product.Stock -=  productDict[product.Id].Item1;
+            }
+
+            await _unitOfWork.ProductRepository.UpdateRangeAsync(products);
+            await _unitOfWork.SaveChangesAsync();
+            
+            foreach (var product in products)
+            {
+                if (product.Stock < 0)
+                {
+                    throw new Exception("Some products are out of stock!");
+                }
+            }
+            
+            await _unitOfWork.CommitTransactionAsync();
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw ex;
+        }
+    }
 }

@@ -1,7 +1,8 @@
 namespace OrderService.Application.Requests;
 
-public class GetAllOrderFilter
+public class GetAllOrderFilter : PaginationBase
 {
-    public DateTime DateFrom { get; set; }
-    public DateTime DateTo { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime? DateFrom { get; set; }
+    public DateTime? DateTo { get; set; }
 }

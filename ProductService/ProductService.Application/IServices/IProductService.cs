@@ -10,4 +10,5 @@ public interface IProductService
     Task CreateProductAsync(ProductRequest productRequest);
     Task UpdateProductAsync(Guid id, ProductRequest productRequest);
     Task DeleteProductAsync(Guid id);
+    Task VerifyAndUpdateProductStockAsync(List<UpdateProductStockRequest> updateProductStockRequest);
 }

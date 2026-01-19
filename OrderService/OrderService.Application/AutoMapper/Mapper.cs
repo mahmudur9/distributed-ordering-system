@@ -14,8 +14,5 @@ public class Mapper : Profile
         CreateMap<Order, OrderResponse>();
         CreateMap<ProductOrderRequest, ProductOrder>();
         CreateMap<ProductOrder, ProductOrderResponse>();
-        
-        CreateMap<PaymentRequest, CreatePaymentGrpcRequest>()
-            .ForMember(dest => dest.PaymentMethodId, opt => opt.MapFrom(src => src.PaymentMethodId == null ? "" : src.PaymentMethodId.ToString()));
     }
 }

@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option csharp_namespace = "ProductService.API";
+
+service ProductGrpcService {
+  rpc VerifyAndUpdateProductStock (UpdateProductGrpcStockRequest) returns (GrpcResponse);
+}
+
+message ProductStockGrpcRequest {
+  string Id = 1;
+  int32 Quantity = 2;
+  string Price = 3;
+}
+
+message UpdateProductGrpcStockRequest {
+  repeated ProductStockGrpcRequest Products = 1;
+}
+
+message GrpcResponse {
+  bool Success = 1;
+  string Error = 2;
+}

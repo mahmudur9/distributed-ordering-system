@@ -8,6 +8,7 @@ public class ProductOrder : Base
     public Guid OrderId { get; set; }
     public Guid ProductId { get; set; }
     public decimal ProductPrice { get; set; }
+    public int Quantity { get; set; }
     [ForeignKey(nameof(OrderId))]
     public Order? Order { get; set; }
 }
