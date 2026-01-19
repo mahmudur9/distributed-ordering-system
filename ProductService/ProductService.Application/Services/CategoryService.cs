@@ -1,5 +1,5 @@
+using System.Linq.Expressions;
 using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
@@ -17,20 +17,22 @@ public class CategoryService : ICategoryService
         _unitOfWork = unitOfWork;
         _mapper = mapper;
     }
-    public async Task<PaginatedResponse<CategoryResponse>> GetAllCategoriesAsync(GetAllCategoriesFilter getAllCategoriesFilter)
+    public async Task<PaginatedResponse<CategoryResponse>> GetAllCategoriesAsync(GetAllCategoriesFilter filter)
     {
         try
         {
-            var categories = await _unitOfWork.CategoryRepository.GetAllCategoriesAsync(getAllCategoriesFilter.Name, 
-                getAllCategoriesFilter.IsActive, getAllCategoriesFilter.ItemsPerPage, getAllCategoriesFilter.PageNumber);
-            var productCount = await _unitOfWork.CategoryRepository.GetAllCategoryCountAsync(getAllCategoriesFilter.Name, 
-                getAllCategoriesFilter.IsActive);
+            List<Expression<Func<Category, bool>>> filters = [];
+            filters.Add(x => x.IsActive == filter.IsActive);
+            if (filter.Name is not null) filters.Add(x => x.Name.ToLower().Contains(filter.Name.ToLower()));
+            
+            var categories = await _unitOfWork.CategoryRepository.GetAllAsync(filters, filter.ItemsPerPage, filter.PageNumber);
+            var productCount = await _unitOfWork.CategoryRepository.CountAsync(filters);
 
             var paginatedResponse = new PaginatedResponse<CategoryResponse>(
                 _mapper.Map<IEnumerable<CategoryResponse>>(categories),
                 productCount,
-                getAllCategoriesFilter.ItemsPerPage, 
-                getAllCategoriesFilter.PageNumber);
+                filter.ItemsPerPage, 
+                filter.PageNumber);
 
             return paginatedResponse;
         }
@@ -104,10 +106,12 @@ public class CategoryService : ICategoryService
             {
                 throw new Exception($"Category with id {id} not found");
             }
+
+            List<Expression<Func<Category, bool>>> filters = [];
+            filters.Add(x => x.Id == id && x.Products.Any(p => p.IsActive));
             
             bool hasActiveProducts = await _unitOfWork.CategoryRepository
-                .AnyAsync([x => x.Id == id, 
-                    x => x.Products.Any(p => p.IsActive)]);
+                .AnyAsync(filters);
             if (hasActiveProducts)
             {
                 throw new Exception("You can not delete a category with active products!");

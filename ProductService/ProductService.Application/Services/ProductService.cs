@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
@@ -18,19 +19,22 @@ public class ProductService : IProductService
         _mapper = mapper;
     }
 
-    public async Task<PaginatedResponse<ProductResponse>> GetAllProductsAsync(GetAllProductsFilter getAllProductsFilter)
+    public async Task<PaginatedResponse<ProductResponse>> GetAllProductsAsync(GetAllProductsFilter filter)
     {
         try
         {
-            var products = await _unitOfWork.ProductRepository.GetAllProductsAsync(getAllProductsFilter.Name, 
-                getAllProductsFilter.IsActive, getAllProductsFilter.ItemsPerPage, getAllProductsFilter.PageNumber);
-            var productCount = await _unitOfWork.ProductRepository.GetAllProductCountAsync(getAllProductsFilter.Name, getAllProductsFilter.IsActive);
+            List<Expression<Func<Product, bool>>> filters = [];
+            filters.Add(x => x.IsActive == filter.IsActive);
+            if (filter.Name is not null) filters.Add(x => x.Name.ToLower().Contains(filter.Name.ToLower()));
+            
+            var products = await _unitOfWork.ProductRepository.GetAllAsync(filters, x => x.Category!, filter.ItemsPerPage, filter.PageNumber);
+            var productCount = await _unitOfWork.ProductRepository.CountAsync(filters);
 
             var paginatedResponse = new PaginatedResponse<ProductResponse>(
                 _mapper.Map<IEnumerable<ProductResponse>>(products),
                 productCount,
-                getAllProductsFilter.ItemsPerPage, 
-                getAllProductsFilter.PageNumber);
+                filter.ItemsPerPage, 
+                filter.PageNumber);
 
             return paginatedResponse;
         }

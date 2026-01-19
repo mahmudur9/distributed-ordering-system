@@ -6,7 +6,7 @@ namespace ProductService.Application.IServices;
 
 public interface ICategoryService
 {
-    Task<PaginatedResponse<CategoryResponse>> GetAllCategoriesAsync(GetAllCategoriesFilter getAllCategoriesFilter);
+    Task<PaginatedResponse<CategoryResponse>> GetAllCategoriesAsync(GetAllCategoriesFilter filter);
     Task<CategoryResponse> GetCategoryByIdAsync(Guid id);
     Task CreateCategoryAsync(CategoryRequest categoryRequest);
     Task UpdateCategoryAsync(Guid id, CategoryRequest categoryRequest);

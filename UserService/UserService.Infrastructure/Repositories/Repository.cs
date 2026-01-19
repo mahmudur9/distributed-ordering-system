@@ -59,43 +59,93 @@ public class Repository<T> : IRepository<T> where T : class
         return await _context.Set<T>().CountAsync();
     }
     
-    public Task<int> CountAsync(Expression<Func<T, bool>>[] predicates)
+    public async Task<int> CountAsync(IEnumerable<Expression<Func<T, bool>>> predicates)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
         }
-        return query.CountAsync();
+        return await query.CountAsync();
     }
 
-    public Task<bool> AnyAsync(Expression<Func<T, bool>>[] predicates)
+    public async Task<bool> AnyAsync(IEnumerable<Expression<Func<T, bool>>> predicates)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
         }
-        return query.AnyAsync();
+        return await query.AnyAsync();
     }
 
-    public Task<T> GetAsync(Expression<Func<T, bool>>[] predicates)
+    public async Task<T?> GetAsync(IEnumerable<Expression<Func<T, bool>>> predicates)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
         }
-        return query.FirstOrDefaultAsync()!;
+        return await query.AsNoTracking().FirstOrDefaultAsync();
     }
 
-    public Task<List<T>> GetAllAsync(Expression<Func<T, bool>>[] predicates)
+    public async Task<T?> GetAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
+        Expression<Func<T, object>> include)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
         }
-        return query.ToListAsync();
+        query = query.Include(include).AsNoTracking();
+        return await query.FirstOrDefaultAsync();
+    }
+
+    public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        return await query.AsNoTracking().ToListAsync();
+    }
+
+    public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
+        Expression<Func<T, object>> include)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        query = query.Include(include).AsNoTracking();
+        return await query.ToListAsync();
+    }
+
+    public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates, int itemsPerPage,
+        int pageNumber)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        query = query.Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage);
+        return await query.ToListAsync();
+    }
+
+    public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
+        Expression<Func<T, Object>> include, int itemsPerPage, int pageNumber)
+    {
+        IQueryable<T> query = _context.Set<T>();
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+        
+        query = query.Include(include).Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).AsNoTracking();
+        
+        return await query.ToListAsync();
     }
 }
