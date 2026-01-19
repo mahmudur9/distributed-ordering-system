@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
+using OrderService.Application.Responses;
 
 namespace OrderService.API.Controllers;
 
@@ -20,5 +21,13 @@ public class OrdersController : ControllerBase
     {
         await _orderService.CreateOrderAsync(orderRequest);
         return Ok("Order created.");
+    }
+
+    [HttpGet("GetAll")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(PaginatedResponse<OrderResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll([FromQuery] GetAllOrdersFilter filters)
+    {
+        return Ok(await _orderService.GetAllOrdersAsync(filters));
     }
 }

@@ -108,47 +108,64 @@ public class Repository<T> : IRepository<T> where T : class
         return await query.FirstOrDefaultAsync();
     }
 
-    public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates)
+    public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
         }
+        if (orderBy is not null)
+        {
+            query = orderBy(query);
+        }
         return await query.AsNoTracking().ToListAsync();
     }
 
     public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
-        Expression<Func<T, object>> include)
+        Expression<Func<T, object>> include, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
+        }
+        if (orderBy is not null)
+        {
+            query = orderBy(query);
         }
         query = query.Include(include).AsNoTracking();
         return await query.ToListAsync();
     }
 
     public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates, int itemsPerPage,
-        int pageNumber)
+        int pageNumber, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
         }
+        if (orderBy is not null)
+        {
+            query = orderBy(query);
+        }
         query = query.Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage);
         return await query.ToListAsync();
     }
 
     public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
-        Expression<Func<T, Object>> include, int itemsPerPage, int pageNumber)
+        Expression<Func<T, object>> include, int itemsPerPage, int pageNumber, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
+        }
+        if (orderBy is not null)
+        {
+            query = orderBy(query);
         }
         
         query = query.Include(include).Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).AsNoTracking();

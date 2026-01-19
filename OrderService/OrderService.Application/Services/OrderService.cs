@@ -1,6 +1,8 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
+using OrderService.Application.Responses;
 using OrderService.Domain.IRepositories;
 using OrderService.Domain.Models;
 using PaymentService.API;
@@ -85,6 +87,33 @@ public class OrderService : IOrderService
         catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
+            throw ex;
+        }
+    }
+
+    public async Task<PaginatedResponse<OrderResponse>> GetAllOrdersAsync(GetAllOrdersFilter filter)
+    {
+        try
+        {
+            List<Expression<Func<Order, bool>>> filters = [];
+            filters.Add(x => x.IsActive == filter.IsActive);
+            if (filter.DateFrom is not null) filters.Add(x => x.CreatedAt >= filter.DateFrom);
+            if (filter.DateTo is not null) filters.Add(x => x.CreatedAt <= filter.DateTo);
+
+            var orders = await _unitOfWork.OrderRepository.GetAllAsync(filters, x => x.Products, filter.ItemsPerPage,
+                filter.PageNumber, x => x.OrderByDescending(order => order.CreatedAt));
+            var productCount = await _unitOfWork.OrderRepository.CountAsync(filters);
+            
+            var paginatedResponse = new PaginatedResponse<OrderResponse>(
+                _mapper.Map<IEnumerable<OrderResponse>>(orders),
+                productCount,
+                filter.ItemsPerPage, 
+                filter.PageNumber);
+
+            return paginatedResponse;
+        }
+        catch (Exception ex)
+        {
             throw ex;
         }
     }

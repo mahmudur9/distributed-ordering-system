@@ -17,8 +17,8 @@ public interface IRepository<T> where T : class
     Task<bool> AnyAsync(IEnumerable<Expression<Func<T, bool>>> predicates);
     Task<T?> GetAsync(IEnumerable<Expression<Func<T, bool>>> predicates);
     Task<T?> GetAsync(IEnumerable<Expression<Func<T, bool>>> predicates, Expression<Func<T, Object>> include);
-    Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates);
-    Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates, Expression<Func<T, Object>> include);
-    Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates, int itemsPerPage, int pageNumber);
-    Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates, Expression<Func<T, Object>> include, int itemsPerPage, int pageNumber);
+    Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
+    Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates, Expression<Func<T, Object>> include, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
+    Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates, int itemsPerPage, int pageNumber, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
+    Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates, Expression<Func<T, Object>> include, int itemsPerPage, int pageNumber, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
 }
