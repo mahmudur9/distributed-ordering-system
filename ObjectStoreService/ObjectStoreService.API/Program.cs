@@ -19,19 +19,19 @@ builder.Services.AddControllers();
 // builder.Services.AddGrpc();
 
 // Configure Kestrel for HTTP/2 without TLS
-/*builder.WebHost.ConfigureKestrel(options =>
+builder.WebHost.ConfigureKestrel(options =>
 {
     /*options.ListenAnyIP(5000, listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
-    });#1#
+    });*/
 
     // Web API on port 8080 (HTTP/1.1)
     options.ListenAnyIP(8000, listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
     });
-});*/
+});
 
 // Register extensions
 builder.Services.AddInfrastructureServices(builder.Configuration);
@@ -52,6 +52,10 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseCors("AllowAll");
+
+app.UseStaticFiles();
+
+// app.UseAuthentication();
 
 app.UseAuthorization();
 

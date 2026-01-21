@@ -20,4 +20,8 @@
         <ProjectReference Include="..\ObjectStoreService.Infrastructure\ObjectStoreService.Infrastructure.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="wwwroot\" />
+    </ItemGroup>
+
 </Project>

@@ -6,5 +6,5 @@ namespace ObjectStoreService.Application.Requests;
 public class MediaRequest
 {
     [Required(ErrorMessage = "A media file is required")]
-    public IFormFile VideoFile { get; set; }
+    public IFormFile MediaFile { get; set; }
 }

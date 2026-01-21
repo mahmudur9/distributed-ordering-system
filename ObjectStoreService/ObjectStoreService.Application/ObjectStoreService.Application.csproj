@@ -13,11 +13,7 @@
 
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="13.0.1"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <Folder Include="IServices\"/>
-        <Folder Include="Services\"/>
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     </ItemGroup>
 
 </Project>

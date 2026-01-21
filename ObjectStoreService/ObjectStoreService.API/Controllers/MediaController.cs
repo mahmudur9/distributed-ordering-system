@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using ObjectStoreService.Application.IServices;
+using ObjectStoreService.Application.Requests;
 
 namespace ObjectStoreService.API.Controllers;
 
@@ -6,9 +8,16 @@ namespace ObjectStoreService.API.Controllers;
 [ApiController]
 public class MediaController : ControllerBase
 {
-    [HttpGet]
-    public IActionResult Get()
+    private readonly IMediaService _mediaService;
+
+    public MediaController(IMediaService mediaService)
     {
-        return Ok("Test");
+        _mediaService = mediaService;
+    }
+
+    [HttpPost("Upload")]
+    public async Task<IActionResult> Upload([FromForm] MediaRequest  mediaRequest)
+    {
+        return Ok(await _mediaService.UploadAsync(mediaRequest));
     }
 }
