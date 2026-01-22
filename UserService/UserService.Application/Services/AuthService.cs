@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using UserService.Application.IServices;
+using UserService.Application.Requests;
+using UserService.Application.Responses;
 
 namespace UserService.Application.Services;
 
@@ -96,5 +98,82 @@ public class AuthService : IAuthService
         var identity = user?.Identity as ClaimsIdentity;
         var userRole = identity!.Claims.FirstOrDefault(x => x.Type.Equals("Role"))!.Value;
         return userRole;
+    }
+
+    public TokenValidationResponse ValidateToken(TokenValidationRequest request)
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            
+            var principal = handler.ValidateToken(
+                request.Token,
+                new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey =
+                        new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration.GetSection("SecretKey").Value!)),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                },
+                out _);
+
+            var claims = principal.Claims.Select(c => new {c.Type, c.Value});
+            
+            var claimResponses = new List<ClaimResponse>();
+            foreach (var claim in claims)
+            {
+                var claimResponse = new ClaimResponse()
+                {
+                    Type = claim.Type,
+                    Value = claim.Value
+                };
+                claimResponses.Add(claimResponse);
+            }
+            var response = new TokenValidationResponse()
+            {
+                Valid = true,
+                Claims = claimResponses
+            };
+            return response;
+        }
+        catch
+        {
+            throw new UnauthorizedAccessException("Invalid token!");
+        }
+    }
+
+    public TokenValidationResponse GetClaims()
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            
+            string token = _httpContextAccessor.HttpContext!.Request.Headers["Authorization"]!;
+            var jwt = handler.ReadJwtToken(token.Split("Bearer ")[1]);
+
+            var claims = jwt.Claims.Select(c => (c.Type, c.Value));
+            
+            var claimResponses = new List<ClaimResponse>();
+            foreach (var claim in claims)
+            {
+                var claimResponse = new ClaimResponse()
+                {
+                    Type = claim.Type,
+                    Value = claim.Value
+                };
+                claimResponses.Add(claimResponse);
+            }
+            var response = new TokenValidationResponse()
+            {
+                Valid = true,
+                Claims = claimResponses
+            };
+            return response;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
     }
 }

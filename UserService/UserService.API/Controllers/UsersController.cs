@@ -1,6 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using UserService.Application.IServices;
 using UserService.Application.Requests;
 using UserService.Application.Responses;
@@ -13,10 +16,12 @@ namespace UserService.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IAuthService _authService;
 
-    public UsersController(IUserService userService)
+    public UsersController(IUserService userService, IAuthService authService)
     {
         _userService = userService;
+        _authService = authService;
     }
 
     [HttpGet("GetAll")]
@@ -53,7 +58,7 @@ public class UsersController : ControllerBase
     [HttpPut("Update/{id}")]
     public async Task<IActionResult> Update(Guid id, UpdateUserRequest updateUserRequest)
     {
-        await  _userService.UpdateUserAsync(id, updateUserRequest);
+        await _userService.UpdateUserAsync(id, updateUserRequest);
         return Ok("User updated successfully");
     }
 
@@ -69,5 +74,13 @@ public class UsersController : ControllerBase
     {
         await _userService.DeleteUserAsync(id);
         return Ok("User deleted successfully");
+    }
+
+    [HttpPost("ValidateToken"), AllowAnonymous]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(TokenValidationResponse), StatusCodes.Status200OK)]
+    public IActionResult ValidateToken([FromBody] TokenValidationRequest request)
+    {
+        return Ok(_authService.ValidateToken(request));
     }
 }

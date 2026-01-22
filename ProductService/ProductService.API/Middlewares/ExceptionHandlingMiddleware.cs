@@ -32,7 +32,8 @@ public class ExceptionHandlingMiddleware
         var code = HttpStatusCode.InternalServerError; // 500 if unexpected
 
         if (exception is ArgumentException) code = HttpStatusCode.BadRequest;
-        // Add more specific exception handling here if needed
+        if (exception is UnauthorizedAccessException) code = HttpStatusCode.Unauthorized;
+        if (exception is KeyNotFoundException) code = HttpStatusCode.NotFound;
 
         var result = JsonSerializer.Serialize(new { error = exception.Message });
         context.Response.ContentType = "application/json";

@@ -1,3 +1,6 @@
+using UserService.Application.Requests;
+using UserService.Application.Responses;
+
 namespace UserService.Application.IServices;
 
 public interface IAuthService
@@ -7,4 +10,6 @@ public interface IAuthService
     string GenerateHash(string password);
     Guid GetAuthenticatedUserId();
     string GetAuthenticatedUserRole();
+    TokenValidationResponse ValidateToken(TokenValidationRequest request);
+    TokenValidationResponse GetClaims();
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
@@ -15,6 +16,7 @@ public class ProductsController : ControllerBase
         _productService = productService;
     }
 
+    [Authorize]
     [HttpGet("GetAll")]
     public async Task<IActionResult> GetAll([FromQuery] GetAllProductsFilter filter)
     {
