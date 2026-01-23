@@ -9,18 +9,18 @@ namespace ProductService.API.Middlewares;
 
 public class RemoteJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IMemoryCache _cache;
 
     public RemoteJwtAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        HttpClient httpClient,
+        IHttpClientFactory  httpClientFactory,
         IMemoryCache cache)
         : base(options, logger, encoder)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
         _cache = cache;
     }
 
@@ -44,8 +44,8 @@ public class RemoteJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOp
         }
 
         // 2️⃣ Call auth service
-        var response = await _httpClient.PostAsJsonAsync(
-            "http://localhost:5252/api/Users/ValidateToken",
+        var response = await _httpClientFactory.CreateClient("user-service").PostAsJsonAsync(
+            "Users/ValidateToken",
             new { token });
 
         if (!response.IsSuccessStatusCode)

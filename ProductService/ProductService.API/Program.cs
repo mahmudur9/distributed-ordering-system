@@ -41,7 +41,12 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 
 // Remote jwt auth start
-builder.Services.AddHttpClient<RemoteJwtAuthHandler>();
+builder.Services.AddHttpClient<RemoteJwtAuthHandler>("user-service", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5252/api/");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(10);
+} );
 
 builder.Services
     .AddAuthentication("RemoteJwt")
