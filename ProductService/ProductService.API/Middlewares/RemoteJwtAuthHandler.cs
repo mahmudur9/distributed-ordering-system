@@ -32,7 +32,7 @@ public class RemoteJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOp
         if (!header.ToString().StartsWith("Bearer "))
             return AuthenticateResult.Fail("Invalid Authorization header");
 
-        var token = header.ToString()["Bearer ".Length..];
+        var token = header.ToString()["Bearer ".Length..]; // Truncate the Bearer, then verify the token.
 
         // 1️⃣ Try cache first
         if (_cache.TryGetValue(token, out ClaimsPrincipal cachedPrincipal))
@@ -60,7 +60,7 @@ public class RemoteJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOp
         var claims = authResponse.Claims
             .Select(c => new Claim(c.Type, c.Value));
 
-        var identity = new ClaimsIdentity(claims, Scheme.Name);
+        var identity = new ClaimsIdentity(claims, Scheme.Name, ClaimTypes.Name, ClaimTypes.Role);
         var principal = new ClaimsPrincipal(identity);
         var ticket = new AuthenticationTicket(principal, Scheme.Name);
 

@@ -16,7 +16,7 @@ public class ProductsController : ControllerBase
         _productService = productService;
     }
 
-    [Authorize]
+    [Authorize(Roles = "User")]
     [HttpGet("GetAll")]
     public async Task<IActionResult> GetAll([FromQuery] GetAllProductsFilter filter)
     {
@@ -24,6 +24,7 @@ public class ProductsController : ControllerBase
         return Ok(products);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpGet("GetById/{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
