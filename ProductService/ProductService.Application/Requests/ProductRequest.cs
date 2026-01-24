@@ -16,4 +16,5 @@ public class ProductRequest
     public required int Stock { get; set; }
     [Required(ErrorMessage =  "CategoryId is required")]
     public Guid CategoryId { get; set; }
+    public List<PictureRequest> Pictures { get; set; } = [];
 }

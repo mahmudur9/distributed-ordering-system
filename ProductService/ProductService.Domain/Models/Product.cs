@@ -12,4 +12,5 @@ public class Product : Base
     public required Guid CategoryId { get; set; }
     [ForeignKey(nameof(CategoryId))]
     public virtual Category? Category { get; set; }
+    public List<Picture> Pictures { get; set; } = [];
 }
