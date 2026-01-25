@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using ProductService.API.Grpc;
 using ProductService.API.Middlewares;
 using ProductService.Application.Extensions;
+using ProductService.Application.IServices;
 using ProductService.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,9 +42,16 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 
 // Remote jwt auth start
-builder.Services.AddHttpClient<RemoteJwtAuthHandler>("user-service", client =>
+builder.Services.AddHttpClient("user-service", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5252/api/");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(10);
+} );
+
+builder.Services.AddHttpClient("object-store-service", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:8005/api/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(10);
 } );
@@ -63,7 +71,7 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "UserService API",
+        Title = "ProductService API",
         Version = "v1"
     });
 

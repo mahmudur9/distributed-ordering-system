@@ -13,6 +13,8 @@ public class Mapper : Profile
         CreateMap<Category, CategoryResponse>();
         
         CreateMap<ProductRequest, Product>();
+        CreateMap<PictureRequest, Picture>();
+        CreateMap<Picture, PictureResponse>();
         CreateMap<Product, ProductResponse>();
     }
 }

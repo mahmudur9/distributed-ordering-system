@@ -5,6 +5,8 @@ namespace ProductService.Application.Requests;
 
 public class PictureRequest
 {
-    [Required(ErrorMessage = "A valid image is required")]
-    public IFormFile MediaFile { get; set; }
+    [Required(ErrorMessage =  "Picture type is required")]
+    public int Type { get; set; }
+    public IFormFile? MediaFile { get; set; }
+    public string? Url { get; set; }
 }

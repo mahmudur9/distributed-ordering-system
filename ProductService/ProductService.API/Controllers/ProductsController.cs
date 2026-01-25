@@ -24,7 +24,7 @@ public class ProductsController : ControllerBase
         return Ok(products);
     }
 
-    [Authorize(Roles = "Admin")]
+    // [Authorize(Roles = "Admin")]
     [HttpGet("GetById/{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -33,7 +33,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("Create")]
-    public async Task<IActionResult> Create(ProductRequest productRequest)
+    public async Task<IActionResult> Create([FromForm] ProductRequest productRequest)
     {
         await _productService.CreateProductAsync(productRequest);
         return Ok("Product created.");

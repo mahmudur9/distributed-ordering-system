@@ -1,10 +1,13 @@
 using System.Linq.Expressions;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using AutoMapper;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
 using ProductService.Domain.IRepositories;
 using ProductService.Domain.Models;
+using ProductService.Infrastructure.Constants;
 
 namespace ProductService.Application.Services;
 
@@ -12,11 +15,13 @@ public class ProductService : IProductService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public ProductService(IUnitOfWork unitOfWork, IMapper mapper)
+    public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IHttpClientFactory httpClientFactory)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<PaginatedResponse<ProductResponse>> GetAllProductsAsync(GetAllProductsFilter filter)
@@ -27,7 +32,9 @@ public class ProductService : IProductService
             filters.Add(x => x.IsActive == filter.IsActive);
             if (filter.Name is not null) filters.Add(x => x.Name.ToLower().Contains(filter.Name.ToLower()));
             
-            var products = await _unitOfWork.ProductRepository.GetAllAsync(filters, x => x.Category!, filter.ItemsPerPage, filter.PageNumber);
+            var products = await _unitOfWork.ProductRepository.GetAllAsync(filters, [x => x.Category!, x => x.Pictures], 
+                filter.ItemsPerPage, filter.PageNumber, x => x.OrderByDescending(o => o.CreatedAt));
+            
             var productCount = await _unitOfWork.ProductRepository.CountAsync(filters);
 
             var paginatedResponse = new PaginatedResponse<ProductResponse>(
@@ -61,6 +68,64 @@ public class ProductService : IProductService
         }
     }
 
+    private void ValidatePictures(List<PictureRequest> picturesRequest)
+    {
+        foreach (var picture in picturesRequest)
+        {
+            if (!(picture.Type == Constants.PictureFromLink || picture.Type == Constants.PictureFromFile))
+            {
+                throw new ArgumentException("Invalid picture type!");
+            }
+
+            if (picture.Type == Constants.PictureFromLink && string.IsNullOrEmpty(picture.Url))
+            {
+                throw new ArgumentException("The picture filed not be empty!");
+            }
+
+            if (picture.Type == Constants.PictureFromFile && picture.MediaFile is null)
+            {
+                throw new ArgumentException("The picture filed not be empty!");
+            }
+        }
+    }
+
+    private async Task UploadPicturesAsync(List<PictureRequest> picturesRequest, List<Picture> pictures)
+    {
+        pictures.Clear();
+            
+        foreach (var picture in picturesRequest)
+        {
+            if (picture.Type == Constants.PictureFromLink)
+            {
+                pictures.Add(new Picture()
+                {
+                    Type = Constants.PictureFromLink,
+                    Url = picture.Url!
+                });
+            }
+            else if (picture.Type == Constants.PictureFromFile)
+            {
+                using var content = new MultipartFormDataContent();
+                using var streamContent = new StreamContent(picture.MediaFile!.OpenReadStream());
+
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue(picture.MediaFile.ContentType);
+
+                content.Add(streamContent, nameof(picture.MediaFile), picture.MediaFile.FileName);
+
+                var httpResponse = await _httpClientFactory.CreateClient("object-store-service").PostAsync("media/upload", content);
+                if (httpResponse.IsSuccessStatusCode)
+                {
+                    var pictureResponse = await httpResponse.Content.ReadFromJsonAsync<PictureRequest>();
+                    pictures.Add(new Picture()
+                    {
+                        Type = Constants.PictureFromFile,
+                        Url = pictureResponse!.Url!
+                    });
+                }
+            }
+        }
+    }
+
     public async Task CreateProductAsync(ProductRequest productRequest)
     {
         try
@@ -69,6 +134,15 @@ public class ProductService : IProductService
             product.CreatedAt = DateTime.UtcNow;
             product.UpdatedAt = DateTime.UtcNow;
             product.IsActive = true;
+
+            if (productRequest.Pictures.Count == 0)
+            {
+                throw new ArgumentException("Product picture is required!");
+            }
+            
+            ValidatePictures(productRequest.Pictures);
+            await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
+            
             await _unitOfWork.ProductRepository.CreateAsync(product);
             await _unitOfWork.SaveChangesAsync();
         }

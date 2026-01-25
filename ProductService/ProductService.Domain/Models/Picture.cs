@@ -4,6 +4,7 @@ namespace ProductService.Domain.Models;
 
 public class Picture : Base
 {
+    public int Type { get; set; }
     public string Url { get; set; }
     public Guid ProductId { get; set; }
     [ForeignKey(nameof(ProductId))]
