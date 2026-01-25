@@ -27,7 +27,7 @@ builder.WebHost.ConfigureKestrel(options =>
     });*/
 
     // Web API on port 8080 (HTTP/1.1)
-    options.ListenAnyIP(8000, listenOptions =>
+    options.ListenAnyIP(8001, listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
     });
