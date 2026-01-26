@@ -20,4 +20,11 @@ public class MediaController : ControllerBase
     {
         return Ok(await _mediaService.UploadAsync(mediaRequest));
     }
+
+    [HttpPost("Delete")]
+    public async Task<IActionResult> Delete(MediaDeleteRequest mediaDeleteRequest)
+    {
+        await _mediaService.DeleteAsync(mediaDeleteRequest);
+        return Ok("Deleted");
+    }
 }

@@ -67,4 +67,25 @@ public class MediaService : IMediaService
             throw ex;
         }
     }
+
+    public async Task DeleteAsync(MediaDeleteRequest mediaDeleteRequest)
+    {
+        try
+        {
+            string fileName = mediaDeleteRequest.Url.Split('/').Last();
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", fileName);
+            if (File.Exists(path))
+            {
+                await Task.Run(() => File.Delete(path));
+            }
+            else
+            {
+                throw new FileNotFoundException("File not found");
+            }
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
 }

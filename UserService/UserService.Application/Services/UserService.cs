@@ -1,5 +1,4 @@
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using UserService.Application.IServices;
 using UserService.Application.Requests;
 using UserService.Application.Responses;
@@ -11,9 +10,9 @@ namespace UserService.Application.Services;
 
 public class UserService : IUserService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
     private readonly IAuthService _authService;
+    private readonly IMapper _mapper;
+    private readonly IUnitOfWork _unitOfWork;
 
     public UserService(IUnitOfWork unitOfWork, IMapper mapper, IAuthService authService)
     {
@@ -26,14 +25,14 @@ public class UserService : IUserService
     {
         try
         {
-            var users = await _unitOfWork.UserRepository.GetAllUsersAsync(filter.Name, 
+            var users = await _unitOfWork.UserRepository.GetAllUsersAsync(filter.Name,
                 filter.IsActive, filter.ItemsPerPage, filter.PageNumber);
             var userCount = await _unitOfWork.UserRepository.GetAllUserCountAsync(filter.Name, filter.IsActive);
 
             var paginatedResponse = new PaginatedResponse<UserResponse>(
                 _mapper.Map<IEnumerable<UserResponse>>(users),
                 userCount,
-                filter.ItemsPerPage, 
+                filter.ItemsPerPage,
                 filter.PageNumber);
 
             return paginatedResponse;
@@ -54,10 +53,7 @@ public class UserService : IUserService
         try
         {
             var role = await _unitOfWork.RoleRepository.GetByIdAsync(userRequest.RoleId);
-            if (role is null)
-            {
-                throw new KeyNotFoundException("Role not found");
-            }
+            if (role is null) throw new KeyNotFoundException("Role not found");
             userRequest.Password = _authService.GenerateHash(userRequest.Password);
             await _unitOfWork.UserRepository.CreateAsync(_mapper.Map<User>(userRequest));
             await _unitOfWork.SaveChangesAsync();
@@ -73,16 +69,12 @@ public class UserService : IUserService
         try
         {
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
-            if (user is null)
-            {
-                throw new Exception("User not found");
-            }
+            if (user is null) throw new Exception("User not found");
 
-            if (id != _authService.GetAuthenticatedUserId() && _authService.GetAuthenticatedUserRole() != Constants.AdminRole)
-            {
+            if (id != _authService.GetAuthenticatedUserId() &&
+                _authService.GetAuthenticatedUserRole() != Constants.AdminRole)
                 throw new UnauthorizedAccessException("Unauthorized");
-            }
-            
+
             user = _mapper.Map(updateUserRequest, user);
             user.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.UserRepository.UpdateAsync(user);
@@ -99,16 +91,11 @@ public class UserService : IUserService
         try
         {
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
-            if (user is null)
-            {
-                throw new Exception("User not found");
-            }
+            if (user is null) throw new Exception("User not found");
 
             if (_authService.GetAuthenticatedUserRole() != Constants.AdminRole)
-            {
                 throw new UnauthorizedAccessException("Unauthorized");
-            }
-            
+
             user.IsActive = false;
             user.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.UserRepository.UpdateAsync(user);
@@ -124,22 +111,14 @@ public class UserService : IUserService
     {
         try
         {
-            if (id != _authService.GetAuthenticatedUserId())
-            {
-                throw new UnauthorizedAccessException("Unauthorized");
-            }
-            
+            if (id != _authService.GetAuthenticatedUserId()) throw new UnauthorizedAccessException("Unauthorized");
+
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
-            if (user is null)
-            {
-                throw new KeyNotFoundException("User not found");
-            }
-            
+            if (user is null) throw new KeyNotFoundException("User not found");
+
             if (!_authService.VerifyPasswordHash(updatePasswordRequest.CurrentPassword, user.Password))
-            {
                 throw new ArgumentException("Incorrect current password!");
-            }
-            
+
             user.Password = _authService.GenerateHash(updatePasswordRequest.NewPassword);
             user.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.UserRepository.UpdateAsync(user);
@@ -156,16 +135,11 @@ public class UserService : IUserService
         try
         {
             var user = await _unitOfWork.UserRepository.GetUserByEmailAsync(loginRequest.Email);
-            if (user is null)
-            {
-                throw new ArgumentException("Incorrect email or password!");
-            }
+            if (user is null) throw new ArgumentException("Incorrect email or password!");
             if (!_authService.VerifyPasswordHash(loginRequest.Password, user.Password))
-            {
                 throw new ArgumentException("Incorrect email or password!");
-            }
 
-            var resposne = new LoginResponse()
+            var resposne = new LoginResponse
             {
                 Token = _authService.GenerateToken(user.Id, user.Email!, user.Role!.Name)
             };
@@ -181,7 +155,7 @@ public class UserService : IUserService
     {
         try
         {
-            Guid userId = _authService.GetAuthenticatedUserId();
+            var userId = _authService.GetAuthenticatedUserId();
             var user = await _unitOfWork.UserRepository.GetUserByIdAsync(userId);
             return _mapper.Map<UserResponse>(user);
         }
