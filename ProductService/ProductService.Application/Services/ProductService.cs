@@ -143,12 +143,19 @@ public class ProductService : IProductService
     {
         try
         {
+            var productCategory = await _unitOfWork.CategoryRepository.GetByIdAsync((Guid)productRequest.CategoryId!);
+            if (productCategory is null)
+            {
+                throw new KeyNotFoundException("Category not found!");
+            }
+            
+            ValidatePictures(productRequest.Pictures);
+            
             var product = _mapper.Map<Product>(productRequest);
             product.CreatedAt = DateTime.UtcNow;
             product.UpdatedAt = DateTime.UtcNow;
             product.IsActive = true;
             
-            ValidatePictures(productRequest.Pictures);
             await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
             
             await _unitOfWork.ProductRepository.CreateAsync(product);
