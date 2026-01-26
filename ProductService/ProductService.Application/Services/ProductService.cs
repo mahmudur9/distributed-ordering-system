@@ -70,6 +70,15 @@ public class ProductService : IProductService
 
     private void ValidatePictures(List<PictureRequest> picturesRequest)
     {
+        if (picturesRequest.Count == 0)
+        {
+            throw new ArgumentException("Product picture is required!");
+        }
+
+        if (picturesRequest.Count > 5)
+        {
+            throw new  ArgumentException("You are not allowed to upload more than five pictures!");
+        }
         foreach (var picture in picturesRequest)
         {
             if (!(picture.Type == Constants.PictureFromLink || picture.Type == Constants.PictureFromFile))
@@ -138,11 +147,6 @@ public class ProductService : IProductService
             product.CreatedAt = DateTime.UtcNow;
             product.UpdatedAt = DateTime.UtcNow;
             product.IsActive = true;
-
-            if (productRequest.Pictures.Count == 0)
-            {
-                throw new ArgumentException("Product picture is required!");
-            }
             
             ValidatePictures(productRequest.Pictures);
             await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
