@@ -56,7 +56,7 @@ public class UserService : IUserService
             var role = await _unitOfWork.RoleRepository.GetByIdAsync(userRequest.RoleId);
             if (role is null)
             {
-                throw new Exception("Role not found");
+                throw new KeyNotFoundException("Role not found");
             }
             userRequest.Password = _authService.GenerateHash(userRequest.Password);
             await _unitOfWork.UserRepository.CreateAsync(_mapper.Map<User>(userRequest));
@@ -132,12 +132,12 @@ public class UserService : IUserService
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
             if (user is null)
             {
-                throw new Exception("User not found");
+                throw new KeyNotFoundException("User not found");
             }
             
             if (!_authService.VerifyPasswordHash(updatePasswordRequest.CurrentPassword, user.Password))
             {
-                throw new BadHttpRequestException("Incorrect current password!");
+                throw new ArgumentException("Incorrect current password!");
             }
             
             user.Password = _authService.GenerateHash(updatePasswordRequest.NewPassword);
@@ -156,9 +156,13 @@ public class UserService : IUserService
         try
         {
             var user = await _unitOfWork.UserRepository.GetUserByEmailAsync(loginRequest.Email);
+            if (user is null)
+            {
+                throw new ArgumentException("Incorrect email or password!");
+            }
             if (!_authService.VerifyPasswordHash(loginRequest.Password, user.Password))
             {
-                throw new BadHttpRequestException("Incorrect email or password!");
+                throw new ArgumentException("Incorrect email or password!");
             }
 
             var resposne = new LoginResponse()
