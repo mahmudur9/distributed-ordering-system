@@ -90,14 +90,19 @@ public class Repository<T> : IRepository<T> where T : class
     }
 
     public async Task<T?> GetAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
-        Expression<Func<T, object>> include)
+        IEnumerable<Expression<Func<T, object>>> includes)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
         }
-        query = query.Include(include).AsNoTracking();
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+        query = query.AsNoTracking();
         return await query.FirstOrDefaultAsync();
     }
 
@@ -117,7 +122,7 @@ public class Repository<T> : IRepository<T> where T : class
     }
 
     public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
-        Expression<Func<T, object>> include, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
+        IEnumerable<Expression<Func<T, object>>> includes, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
@@ -128,7 +133,11 @@ public class Repository<T> : IRepository<T> where T : class
         {
             query = orderBy(query);
         }
-        query = query.Include(include).AsNoTracking();
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+        query = query.AsNoTracking();
         return await query.ToListAsync();
     }
 
@@ -149,7 +158,7 @@ public class Repository<T> : IRepository<T> where T : class
     }
 
     public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
-        Expression<Func<T, object>> include, int itemsPerPage, int pageNumber, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
+        IEnumerable<Expression<Func<T, Object>>> includes, int itemsPerPage, int pageNumber, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
@@ -161,7 +170,12 @@ public class Repository<T> : IRepository<T> where T : class
             query = orderBy(query);
         }
         
-        query = query.Include(include).Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).AsNoTracking();
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+        
+        query = query.Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).AsNoTracking();
         
         return await query.ToListAsync();
     }

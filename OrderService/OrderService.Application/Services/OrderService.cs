@@ -100,7 +100,7 @@ public class OrderService : IOrderService
             if (filter.DateFrom is not null) filters.Add(x => x.CreatedAt >= filter.DateFrom);
             if (filter.DateTo is not null) filters.Add(x => x.CreatedAt <= filter.DateTo);
 
-            var orders = await _unitOfWork.OrderRepository.GetAllAsync(filters, x => x.Products, filter.ItemsPerPage,
+            var orders = await _unitOfWork.OrderRepository.GetAllAsync(filters, [x => x.Products], filter.ItemsPerPage,
                 filter.PageNumber, x => x.OrderByDescending(order => order.CreatedAt));
             var productCount = await _unitOfWork.OrderRepository.CountAsync(filters);
             

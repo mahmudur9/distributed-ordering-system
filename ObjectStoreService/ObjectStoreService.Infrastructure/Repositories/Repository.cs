@@ -53,7 +53,7 @@ public class Repository<T> : IRepository<T> where T : class
     {
         await Task.Run(() => { _context.Set<T>().RemoveRange(models); });
     }
-    
+
     public async Task<int> CountAsync(IEnumerable<Expression<Func<T, bool>>> predicates)
     {
         IQueryable<T> query = _context.Set<T>();
@@ -61,6 +61,7 @@ public class Repository<T> : IRepository<T> where T : class
         {
             query = query.Where(predicate);
         }
+
         return await query.CountAsync();
     }
 
@@ -71,6 +72,7 @@ public class Repository<T> : IRepository<T> where T : class
         {
             query = query.Where(predicate);
         }
+
         return await query.AnyAsync();
     }
 
@@ -81,18 +83,25 @@ public class Repository<T> : IRepository<T> where T : class
         {
             query = query.Where(predicate);
         }
+
         return await query.AsNoTracking().FirstOrDefaultAsync();
     }
 
     public async Task<T?> GetAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
-        Expression<Func<T, object>> include)
+        IEnumerable<Expression<Func<T, object>>> includes)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
         }
-        query = query.Include(include).AsNoTracking();
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        query = query.AsNoTracking();
         return await query.FirstOrDefaultAsync();
     }
 
@@ -104,26 +113,35 @@ public class Repository<T> : IRepository<T> where T : class
         {
             query = query.Where(predicate);
         }
+
         if (orderBy is not null)
         {
             query = orderBy(query);
         }
+
         return await query.AsNoTracking().ToListAsync();
     }
 
     public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
-        Expression<Func<T, object>> include, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
+        IEnumerable<Expression<Func<T, object>>> includes, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
         }
+
         if (orderBy is not null)
         {
             query = orderBy(query);
         }
-        query = query.Include(include).AsNoTracking();
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        query = query.AsNoTracking();
         return await query.ToListAsync();
     }
 
@@ -135,29 +153,38 @@ public class Repository<T> : IRepository<T> where T : class
         {
             query = query.Where(predicate);
         }
+
         if (orderBy is not null)
         {
             query = orderBy(query);
         }
+
         query = query.Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage);
         return await query.ToListAsync();
     }
 
     public async Task<List<T>> GetAllAsync(IEnumerable<Expression<Func<T, bool>>> predicates,
-        Expression<Func<T, object>> include, int itemsPerPage, int pageNumber, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
+        IEnumerable<Expression<Func<T, Object>>> includes, int itemsPerPage, int pageNumber,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
     {
         IQueryable<T> query = _context.Set<T>();
         foreach (var predicate in predicates)
         {
             query = query.Where(predicate);
         }
+
         if (orderBy is not null)
         {
             query = orderBy(query);
         }
-        
-        query = query.Include(include).Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).AsNoTracking();
-        
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        query = query.Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).AsNoTracking();
+
         return await query.ToListAsync();
     }
 }
