@@ -1,9 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using UserService.Domain.IRepositories;
 using UserService.Domain.Models;
-using UserService.Infrastructure.Data;
 
-namespace UserService.Infrastructure.BackgroundServices;
+namespace UserService.Infrastructure.Data;
 
 public static class DataSeeding
 {
@@ -14,7 +13,7 @@ public static class DataSeeding
 
         if (await unitOfWork.RoleRepository.GetAllCountAsync() == 0)
         {
-            List<Role> roles = [new Role(){Name = "Admin"}, new Role(){Name = "User"}];
+            List<Role> roles = [new() { Name = "Admin" }, new() { Name = "User" }];
             await unitOfWork.RoleRepository.CreateRangeAsync(roles);
             await unitOfWork.SaveChangesAsync();
         }

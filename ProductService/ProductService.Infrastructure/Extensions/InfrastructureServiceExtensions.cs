@@ -20,7 +20,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         
         // Register background services
-        services.AddHostedService<Migration>();
+        services.AddHostedService<BackgroundWorkerService>();
         
         return services;
     }

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ObjectStoreService.Domain.IRepositories;
+using ObjectStoreService.Infrastructure.BackgroundServices;
 using ObjectStoreService.Infrastructure.Data;
 using ObjectStoreService.Infrastructure.Repositories;
 
@@ -23,6 +24,7 @@ public static class InfrastructureServiceExtensions
         
         
         // Register background services
+        services.AddHostedService<BackgroundWorkerService>();
 
 
         return services;

@@ -12,25 +12,22 @@ EXPOSE 8000
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["ObjectStoreService.API/ObjectStoreService.API.csproj", "ObjectStoreService.API/"]
-COPY ["ObjectStoreService.Application/ObjectStoreService.Application.csproj", "ObjectStoreService.Application/"]
-COPY ["ObjectStoreService.Domain/ObjectStoreService.Domain.csproj", "ObjectStoreService.Domain/"]
-COPY ["ObjectStoreService.Infrastructure/ObjectStoreService.Infrastructure.csproj", "ObjectStoreService.Infrastructure/"]
-RUN dotnet restore "./ObjectStoreService.API/ObjectStoreService.API.csproj"
+COPY ["UserService.API/UserService.API.csproj", "UserService.API/"]
+COPY ["UserService.Application/UserService.Application.csproj", "UserService.Application/"]
+COPY ["UserService.Domain/UserService.Domain.csproj", "UserService.Domain/"]
+COPY ["UserService.Infrastructure/UserService.Infrastructure.csproj", "UserService.Infrastructure/"]
+RUN dotnet restore "./UserService.API/UserService.API.csproj"
 COPY . .
-WORKDIR "/src/ObjectStoreService.API"
-RUN dotnet build "./ObjectStoreService.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/UserService.API"
+RUN dotnet build "./UserService.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./ObjectStoreService.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./UserService.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-USER root
-RUN mkdir /app/wwwroot
-RUN chmod -R 777 /app/wwwroot
-ENTRYPOINT ["dotnet", "ObjectStoreService.API.dll"]
+ENTRYPOINT ["dotnet", "UserService.API.dll"]

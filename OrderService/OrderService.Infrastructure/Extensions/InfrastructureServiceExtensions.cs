@@ -33,7 +33,7 @@ public static class InfrastructureServiceExtensions
         });
 
         // Register background services
-        services.AddHostedService<Migration>();
+        services.AddHostedService<BackgroundWorkerService>();
 
         return services;
     }

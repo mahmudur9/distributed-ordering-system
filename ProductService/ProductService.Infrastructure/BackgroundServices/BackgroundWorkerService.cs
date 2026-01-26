@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using UserService.Infrastructure.Data;
+using ProductService.Infrastructure.Data;
 
-namespace UserService.Infrastructure.BackgroundServices;
+namespace ProductService.Infrastructure.BackgroundServices;
 
 public class BackgroundWorkerService : BackgroundService
 {
@@ -16,6 +16,5 @@ public class BackgroundWorkerService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Migration.Migrate(_serviceScopeFactory, stoppingToken);
-        await DataSeeding.Seed(_serviceScopeFactory);
     }
 }

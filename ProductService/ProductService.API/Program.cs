@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.OpenApi.Models;
 using ProductService.API.Grpc;
 using ProductService.API.Middlewares;
 using ProductService.Application.Extensions;
-using ProductService.Application.IServices;
 using ProductService.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,16 +25,10 @@ builder.Services.AddGrpc();
 // Configure Kestrel for HTTP/2 without TLS
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(5000, listenOptions =>
-    {
-        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
-    });
+    options.ListenAnyIP(5000, listenOptions => { listenOptions.Protocols = HttpProtocols.Http2; });
 
     // Web API on port 8080 (HTTP/1.1)
-    options.ListenAnyIP(8000, listenOptions =>
-    {
-        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
-    });
+    options.ListenAnyIP(8000, listenOptions => { listenOptions.Protocols = HttpProtocols.Http1; });
 });
 
 // Register extensions
@@ -44,17 +38,18 @@ builder.Services.AddApplicationServices(builder.Configuration);
 // Remote jwt auth start
 builder.Services.AddHttpClient("user-service", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5252/api/");
+    client.BaseAddress = new Uri("http://user-service-api:8000/api/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(10);
-} );
+});
 
 builder.Services.AddHttpClient("object-store-service", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:8005/api/");
+    client.BaseAddress = new Uri("http://object-store-service-api:8000/api/");
+    // client.BaseAddress = new Uri("http://localhost:8005/api/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(10);
-} );
+});
 
 builder.Services
     .AddAuthentication("RemoteJwt")

@@ -122,6 +122,10 @@ public class ProductService : IProductService
                         Url = pictureResponse!.Url!
                     });
                 }
+                else
+                {
+                    throw new Exception("Image uploading failed!");
+                }
             }
         }
     }

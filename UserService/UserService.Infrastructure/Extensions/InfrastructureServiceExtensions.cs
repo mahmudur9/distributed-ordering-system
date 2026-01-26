@@ -22,8 +22,6 @@ public static class InfrastructureServiceExtensions
         // Register background services
         services.AddHostedService<BackgroundWorkerService>();
         
-        // Register swagger
-        
 
         return services;
     }

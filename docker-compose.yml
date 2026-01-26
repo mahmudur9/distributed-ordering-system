@@ -53,6 +53,38 @@ services:
     networks:
       - ordering-system-network
       
+  user-service:
+    build:
+      context: ./UserService
+      dockerfile: Dockerfile
+    image: user-service
+    container_name: user-service-api
+    ports:
+      - "8004:8000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=UserService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+    depends_on:
+      - sqlserver
+    networks:
+      - ordering-system-network
+      
+  object-store-service:
+    build:
+      context: ./ObjectStoreService
+      dockerfile: Dockerfile
+    image: object-store-service
+    container_name: object-store-service-api
+    ports:
+      - "8005:8000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=ObjectStoreService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+    depends_on:
+      - sqlserver
+    networks:
+      - ordering-system-network
+      
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: ordering-system-mssql
