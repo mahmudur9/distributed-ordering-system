@@ -32,7 +32,8 @@ public class ProductService : IProductService
             filters.Add(x => x.IsActive == filter.IsActive);
             if (filter.Name is not null) filters.Add(x => x.Name.ToLower().Contains(filter.Name.ToLower()));
             
-            var products = await _unitOfWork.ProductRepository.GetAllAsync(filters, [x => x.Category!, x => x.Pictures], 
+            var products = await _unitOfWork.ProductRepository.GetAllAsync(filters, 
+                [x => x.Category!, x => x.Pictures.Where(p => p.IsActive)], 
                 filter.ItemsPerPage, filter.PageNumber, x => x.OrderByDescending(o => o.CreatedAt));
             
             var productCount = await _unitOfWork.ProductRepository.CountAsync(filters);
@@ -55,7 +56,8 @@ public class ProductService : IProductService
     {
         try
         {
-            var product = await _unitOfWork.ProductRepository.GetByIdAsync(id);
+            var product = await _unitOfWork.ProductRepository.GetAsync([x => x.Id == id], 
+                [x => x.Category!, x => x.Pictures.Where(p => p.IsActive)]);
             if (product is null)
             {
                 throw new Exception($"Product with id {id} not found");
@@ -100,8 +102,6 @@ public class ProductService : IProductService
 
     private async Task UploadPicturesAsync(List<PictureRequest> picturesRequest, List<Picture> pictures)
     {
-        pictures.Clear();
-            
         foreach (var picture in picturesRequest)
         {
             if (picture.Type == Constants.PictureFromLink)
@@ -156,6 +156,7 @@ public class ProductService : IProductService
             product.UpdatedAt = DateTime.UtcNow;
             product.IsActive = true;
             
+            product.Pictures.Clear();
             await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
             
             await _unitOfWork.ProductRepository.CreateAsync(product);
@@ -167,18 +168,46 @@ public class ProductService : IProductService
         }
     }
 
-    public async Task UpdateProductAsync(Guid id, ProductRequest productRequest)
+    private void MapToProduct(ProductUpdateRequest productUpdateRequest, Product product)
+    {
+        product.Name = productUpdateRequest.Name!;
+        product.Description = productUpdateRequest.Description!;
+        product.BuyPrice = (decimal)productUpdateRequest.BuyPrice!;
+        product.SellingPrice = (decimal)productUpdateRequest.SellingPrice!;
+        product.Stock = (int)productUpdateRequest.Stock!;
+        product.CategoryId = (Guid)productUpdateRequest.CategoryId!;
+        product.UpdatedAt = DateTime.UtcNow;
+    }
+
+    public async Task UpdateProductAsync(Guid id, ProductUpdateRequest productRequest)
     {
         try
         {
-            var product = await _unitOfWork.ProductRepository.GetByIdAsync(id);
+            var product = await _unitOfWork.ProductRepository.GetAsync([x => x.Id == id], 
+                [x => x.Pictures.Where(p => p.IsActive)]);
             if (product is null)
             {
                 throw new Exception($"Product with id {id} not found");
             }
+
+            if (productRequest.Pictures.Count + product.Pictures.Count - productRequest.DeletePictureIds.Count > 5)
+            {
+                throw new  ArgumentException("You are not allowed to upload more than five pictures!");
+            }
+            ValidatePictures(productRequest.Pictures);
+
+            foreach (var picture in  product.Pictures)
+            {
+                if (productRequest.DeletePictureIds.Contains(picture.Id))
+                {
+                    picture.IsActive = false;
+                    product.UpdatedAt = DateTime.UtcNow;
+                }
+            }
             
-            product =  _mapper.Map(productRequest, product);
-            product.UpdatedAt = DateTime.UtcNow;
+            MapToProduct(productRequest, product);
+            await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
+            
             await _unitOfWork.ProductRepository.UpdateAsync(product);
             await _unitOfWork.SaveChangesAsync();
         }
