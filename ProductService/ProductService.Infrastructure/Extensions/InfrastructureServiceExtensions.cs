@@ -22,6 +22,21 @@ public static class InfrastructureServiceExtensions
         // Register background services
         services.AddHostedService<BackgroundWorkerService>();
         
+        // Register httpClient
+        services.AddHttpClient("user-service", client =>
+        {
+            client.BaseAddress = new Uri(configuration.GetRequiredSection("Services").GetValue<string>("UserService")! + "/api/");
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+
+        services.AddHttpClient("object-store-service", client =>
+        {
+            client.BaseAddress = new Uri(configuration.GetRequiredSection("Services").GetValue<string>("ObjectStoreService")! + "/api/");
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+        
         return services;
     }
 }

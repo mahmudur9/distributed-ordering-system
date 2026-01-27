@@ -13,6 +13,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=ProductService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+      - Services__UserService=http://user-service-api:8000
+      - Services__ObjectStoreService=http://object-store-service-api:8000
     depends_on:
       - sqlserver
     networks:
@@ -29,8 +31,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=OrderService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
-      - Grpc__ProductService=http://product-service-api:5000
-      - Grpc__PaymentService=http://payment-service-api:5000
+      - Services__ProductService=http://product-service-api:5000
+      - Services__PaymentService=http://payment-service-api:5000
     depends_on:
       - product-service
     networks:

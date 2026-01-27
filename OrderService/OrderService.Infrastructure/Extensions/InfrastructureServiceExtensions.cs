@@ -25,11 +25,11 @@ public static class InfrastructureServiceExtensions
         // Register gRPC clients
         services.AddGrpcClient<ProductGrpcService.ProductGrpcServiceClient>(o =>
         {
-            o.Address = new Uri(configuration.GetRequiredSection("Grpc").GetValue<string>("ProductService")!);
+            o.Address = new Uri(configuration.GetRequiredSection("Services").GetValue<string>("ProductService")!);
         });
         services.AddGrpcClient<PaymentGrpcService.PaymentGrpcServiceClient>(o =>
         {
-            o.Address = new Uri(configuration.GetRequiredSection("Grpc").GetValue<string>("PaymentService")!);
+            o.Address = new Uri(configuration.GetRequiredSection("Services").GetValue<string>("PaymentService")!);
         });
 
         // Register background services

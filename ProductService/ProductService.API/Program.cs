@@ -36,21 +36,6 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 
 // Remote jwt auth start
-builder.Services.AddHttpClient("user-service", client =>
-{
-    client.BaseAddress = new Uri("http://user-service-api:8000/api/");
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(10);
-});
-
-builder.Services.AddHttpClient("object-store-service", client =>
-{
-    client.BaseAddress = new Uri("http://object-store-service-api:8000/api/");
-    // client.BaseAddress = new Uri("http://localhost:8005/api/");
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(10);
-});
-
 builder.Services
     .AddAuthentication("RemoteJwt")
     .AddScheme<AuthenticationSchemeOptions, RemoteJwtAuthHandler>(
