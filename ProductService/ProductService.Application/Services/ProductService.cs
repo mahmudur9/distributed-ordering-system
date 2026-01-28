@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using AutoMapper;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
@@ -9,6 +10,7 @@ using ProductService.Domain.ICache;
 using ProductService.Domain.IRepositories;
 using ProductService.Domain.Models;
 using ProductService.Infrastructure.Constants;
+using StackExchange.Redis;
 
 namespace ProductService.Application.Services;
 
@@ -17,7 +19,7 @@ public class ProductService : IProductService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ICache  _cache;
+    private readonly ICache _cache;
 
     public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IHttpClientFactory httpClientFactory, ICache cache)
     {
@@ -34,17 +36,45 @@ public class ProductService : IProductService
             List<Expression<Func<Product, bool>>> filters = [];
             filters.Add(x => x.IsActive == filter.IsActive);
             if (filter.Name is not null) filters.Add(x => x.Name.ToLower().Contains(filter.Name.ToLower()));
-            
-            var products = await _unitOfWork.ProductRepository.GetAllAsync(filters, 
-                [x => x.Category!, x => x.Pictures.Where(p => p.IsActive)], 
+
+            var products = await _unitOfWork.ProductRepository.GetAllAsync(filters,
+                [x => x.Category!, x => x.Pictures.Where(p => p.IsActive)],
                 filter.ItemsPerPage, filter.PageNumber, x => x.OrderByDescending(o => o.CreatedAt));
-            
+
             var productCount = await _unitOfWork.ProductRepository.CountAsync(filters);
 
             var paginatedResponse = new PaginatedResponse<ProductResponse>(
                 _mapper.Map<IEnumerable<ProductResponse>>(products),
                 productCount,
-                filter.ItemsPerPage, 
+                filter.ItemsPerPage,
+                filter.PageNumber);
+
+            return paginatedResponse;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+    
+    public async Task<PaginatedResponse<ProductResponse>> GetAllProductsFromRedisAsync(GetAllProductsFilter filter)
+    {
+        try
+        {
+            string query =  "@Category:{electronics} @IsActive:{true} ";
+            if (!string.IsNullOrEmpty(filter.Name))
+            {
+                query += $"(@Name:{filter.Name + "*"} | @Name:{filter.Name})";
+            }
+
+            var products = await _cache.GetAllJsonAsync<ProductResponse>(Constants.ProductCacheIndex, 
+                query, filter.PageNumber, filter.ItemsPerPage, "CreatedAt", "DESC");
+            var productCount = await _cache.GetAllCountAsync(Constants.ProductCacheIndex, query);
+
+            var paginatedResponse = new PaginatedResponse<ProductResponse>(
+                products,
+                productCount,
+                filter.ItemsPerPage,
                 filter.PageNumber);
 
             return paginatedResponse;
@@ -59,13 +89,13 @@ public class ProductService : IProductService
     {
         try
         {
-            var product = await _unitOfWork.ProductRepository.GetAsync([x => x.Id == id], 
-                [x => x.Category!, x => x.Pictures.Where(p => p.IsActive)]);
+            string? product = await _cache.GetJsonAsync(Constants.ProductCacheKey + id);
             if (product is null)
             {
                 throw new Exception($"Product with id {id} not found");
             }
-            return _mapper.Map<ProductResponse>(product);
+
+            return JsonSerializer.Deserialize<ProductResponse>(product)!;
         }
         catch (Exception ex)
         {
@@ -82,8 +112,9 @@ public class ProductService : IProductService
 
         if (picturesRequest.Count > 5)
         {
-            throw new  ArgumentException("You are not allowed to upload more than five pictures!");
+            throw new ArgumentException("You are not allowed to upload more than five pictures!");
         }
+
         foreach (var picture in picturesRequest)
         {
             if (!(picture.Type == Constants.PictureFromLink || picture.Type == Constants.PictureFromFile))
@@ -124,7 +155,8 @@ public class ProductService : IProductService
 
                 content.Add(streamContent, nameof(picture.MediaFile), picture.MediaFile.FileName);
 
-                var httpResponse = await _httpClientFactory.CreateClient("object-store-service").PostAsync("media/upload", content);
+                var httpResponse = await _httpClientFactory.CreateClient("object-store-service")
+                    .PostAsync("media/upload", content);
                 if (httpResponse.IsSuccessStatusCode)
                 {
                     var pictureResponse = await httpResponse.Content.ReadFromJsonAsync<PictureRequest>();
@@ -141,7 +173,7 @@ public class ProductService : IProductService
             }
         }
     }
-    
+
     private Product MapToProduct(ProductRequest productUpdateRequest)
     {
         return new Product()
@@ -155,7 +187,7 @@ public class ProductService : IProductService
             UpdatedAt = DateTime.UtcNow
         };
     }
-    
+
     private void MapToProduct(ProductUpdateRequest productUpdateRequest, Product product)
     {
         product.Name = productUpdateRequest.Name!;
@@ -172,23 +204,23 @@ public class ProductService : IProductService
         try
         {
             var productCategory = await _unitOfWork.CategoryRepository.GetByIdAsync((Guid)productRequest.CategoryId!);
-            
+
             await _unitOfWork.BeginTransactionAsync();
-            
+
             if (productCategory is null)
             {
                 throw new KeyNotFoundException("Category not found!");
             }
-            
+
             ValidatePictures(productRequest.Pictures);
-            
+
             var product = MapToProduct(productRequest);
             await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
-            
+
             await _unitOfWork.ProductRepository.CreateAsync(product);
             await _unitOfWork.SaveChangesAsync();
-            
-            await _cache.SetAsync(Constants.ProductCacheKey + product.Id, _mapper.Map<ProductResponse>(product));
+
+            await _cache.SetJsonAsync(Constants.ProductCacheKey + product.Id, _mapper.Map<ProductResponse>(product));
 
             await _unitOfWork.CommitTransactionAsync();
         }
@@ -203,7 +235,7 @@ public class ProductService : IProductService
     {
         try
         {
-            var product = await _unitOfWork.ProductRepository.GetAsync([x => x.Id == id], 
+            var product = await _unitOfWork.ProductRepository.GetAsync([x => x.Id == id],
                 [x => x.Pictures.Where(p => p.IsActive)]);
             if (product is null)
             {
@@ -212,11 +244,12 @@ public class ProductService : IProductService
 
             if (productRequest.Pictures.Count + product.Pictures.Count - productRequest.DeletePictureIds.Count > 5)
             {
-                throw new  ArgumentException("You are not allowed to upload more than five pictures!");
+                throw new ArgumentException("You are not allowed to upload more than five pictures!");
             }
+
             ValidatePictures(productRequest.Pictures);
 
-            foreach (var picture in  product.Pictures)
+            foreach (var picture in product.Pictures)
             {
                 if (productRequest.DeletePictureIds.Contains(picture.Id))
                 {
@@ -224,17 +257,17 @@ public class ProductService : IProductService
                     product.UpdatedAt = DateTime.UtcNow;
                 }
             }
-            
+
             MapToProduct(productRequest, product);
             await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
-            
+
             await _unitOfWork.BeginTransactionAsync();
-            
+
             await _unitOfWork.ProductRepository.UpdateAsync(product);
             await _unitOfWork.SaveChangesAsync();
-            
-            await _cache.SetAsync(Constants.ProductCacheKey + product.Id, _mapper.Map<ProductResponse>(product));
-            
+
+            await _cache.SetJsonAsync(Constants.ProductCacheKey + product.Id, _mapper.Map<ProductResponse>(product));
+
             await _unitOfWork.CommitTransactionAsync();
         }
         catch (Exception ex)
@@ -249,18 +282,27 @@ public class ProductService : IProductService
         try
         {
             var product = await _unitOfWork.ProductRepository.GetByIdAsync(id);
+
+            await _unitOfWork.BeginTransactionAsync();
+
             if (product is null)
             {
                 throw new Exception($"Product with id {id} not found");
             }
-            
+
             product.IsActive = false;
             product.UpdatedAt = DateTime.UtcNow;
+
             await _unitOfWork.ProductRepository.UpdateAsync(product);
             await _unitOfWork.SaveChangesAsync();
+
+            await _cache.DeleteJsonAsync(Constants.ProductCacheKey + product.Id);
+
+            await _unitOfWork.CommitTransactionAsync();
         }
         catch (Exception ex)
         {
+            await _unitOfWork.RollbackTransactionAsync();
             throw ex;
         }
     }
@@ -269,8 +311,10 @@ public class ProductService : IProductService
     {
         try
         {
-            var products = await _unitOfWork.ProductRepository.GetAllAsync([x => 
-                updateProductStockRequest.Select(p => p.Id).Contains(x.Id) && x.IsActive]);
+            var products = await _unitOfWork.ProductRepository.GetAllAsync([
+                x =>
+                    updateProductStockRequest.Select(p => p.Id).Contains(x.Id) && x.IsActive
+            ]);
 
             if (products.Count != updateProductStockRequest.Count())
             {
@@ -282,7 +326,8 @@ public class ProductService : IProductService
             var productDict = new Dictionary<Guid, Tuple<int, decimal>>();
             foreach (var productStockRequest in updateProductStockRequest)
             {
-                productDict[productStockRequest.Id] = Tuple.Create(productStockRequest.Quantity, productStockRequest.Price);
+                productDict[productStockRequest.Id] =
+                    Tuple.Create(productStockRequest.Quantity, productStockRequest.Price);
             }
 
             foreach (var product in products)
@@ -291,12 +336,13 @@ public class ProductService : IProductService
                 {
                     throw new Exception("Price of some products doesn't match!");
                 }
-                product.Stock -=  productDict[product.Id].Item1;
+
+                product.Stock -= productDict[product.Id].Item1;
             }
 
             await _unitOfWork.ProductRepository.UpdateRangeAsync(products);
             await _unitOfWork.SaveChangesAsync();
-            
+
             foreach (var product in products)
             {
                 if (product.Stock < 0)
@@ -304,7 +350,7 @@ public class ProductService : IProductService
                     throw new Exception("Some products are out of stock!");
                 }
             }
-            
+
             await _unitOfWork.CommitTransactionAsync();
         }
         catch (Exception ex)

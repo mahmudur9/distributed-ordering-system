@@ -20,7 +20,7 @@ public class ProductsController : ControllerBase
     [HttpGet("GetAll")]
     public async Task<IActionResult> GetAll([FromQuery] GetAllProductsFilter filter)
     {
-        var products = await _productService.GetAllProductsAsync(filter);
+        var products = await _productService.GetAllProductsFromRedisAsync(filter);
         return Ok(products);
     }
 

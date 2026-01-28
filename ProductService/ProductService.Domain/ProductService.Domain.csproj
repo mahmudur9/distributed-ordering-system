@@ -6,4 +6,10 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Reference Include="StackExchange.Redis">
+        <HintPath>..\..\..\..\..\.nuget\packages\stackexchange.redis\2.10.1\lib\net8.0\StackExchange.Redis.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
 </Project>

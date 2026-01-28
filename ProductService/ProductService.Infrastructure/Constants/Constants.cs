@@ -8,4 +8,7 @@ public static class Constants
     
     // Caching keys
     public const string ProductCacheKey = "product:";
+    
+    // Caching indexes
+    public const string ProductCacheIndex = "idx:products";
 }
