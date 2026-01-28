@@ -2,7 +2,7 @@ using System.Text.Json;
 using ProductService.Domain.ICache;
 using StackExchange.Redis;
 
-namespace ProductService.Infrastructure.RedisCache;
+namespace ProductService.Infrastructure.Cache;
 
 public class RedisCache : ICache
 {
@@ -22,10 +22,14 @@ public class RedisCache : ICache
         }
     }
 
-    public async Task<T?> GetAsync<T>(string key)
+    public async Task<string?> GetAsync<T>(string key)
     {
         var result = await _database.ExecuteAsync("JSON.GET", key);
-        string json = result.ToString();
-        return JsonSerializer.Deserialize<T>(json);
+        if (result.IsNull)
+        {
+            return null;
+        }
+
+        return result.ToString();
     }
 }

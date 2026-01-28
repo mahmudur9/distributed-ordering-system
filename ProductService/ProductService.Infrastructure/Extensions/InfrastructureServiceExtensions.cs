@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ProductService.Domain.ICache;
 using ProductService.Domain.IRepositories;
 using ProductService.Infrastructure.BackgroundServices;
+using ProductService.Infrastructure.Cache;
 using ProductService.Infrastructure.Data;
 using ProductService.Infrastructure.Repositories;
 using StackExchange.Redis;
@@ -49,7 +50,7 @@ public static class InfrastructureServiceExtensions
             return ConnectionMultiplexer.Connect(redisConfig);
         });
 
-        services.AddScoped<ICache, RedisCache.RedisCache>();
+        services.AddScoped<ICache, RedisCache>();
         
         return services;
     }

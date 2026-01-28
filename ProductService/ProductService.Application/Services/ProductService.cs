@@ -5,6 +5,7 @@ using AutoMapper;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
+using ProductService.Domain.ICache;
 using ProductService.Domain.IRepositories;
 using ProductService.Domain.Models;
 using ProductService.Infrastructure.Constants;
@@ -16,12 +17,14 @@ public class ProductService : IProductService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ICache  _cache;
 
-    public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IHttpClientFactory httpClientFactory)
+    public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IHttpClientFactory httpClientFactory, ICache cache)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _httpClientFactory = httpClientFactory;
+        _cache = cache;
     }
 
     public async Task<PaginatedResponse<ProductResponse>> GetAllProductsAsync(GetAllProductsFilter filter)
@@ -138,36 +141,21 @@ public class ProductService : IProductService
             }
         }
     }
-
-    public async Task CreateProductAsync(ProductRequest productRequest)
+    
+    private Product MapToProduct(ProductRequest productUpdateRequest)
     {
-        try
+        return new Product()
         {
-            var productCategory = await _unitOfWork.CategoryRepository.GetByIdAsync((Guid)productRequest.CategoryId!);
-            if (productCategory is null)
-            {
-                throw new KeyNotFoundException("Category not found!");
-            }
-            
-            ValidatePictures(productRequest.Pictures);
-            
-            var product = _mapper.Map<Product>(productRequest);
-            product.CreatedAt = DateTime.UtcNow;
-            product.UpdatedAt = DateTime.UtcNow;
-            product.IsActive = true;
-            
-            product.Pictures.Clear();
-            await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
-            
-            await _unitOfWork.ProductRepository.CreateAsync(product);
-            await _unitOfWork.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
+            Name = productUpdateRequest.Name!,
+            Description = productUpdateRequest.Description!,
+            BuyPrice = (decimal)productUpdateRequest.BuyPrice!,
+            SellingPrice = (decimal)productUpdateRequest.SellingPrice!,
+            Stock = (int)productUpdateRequest.Stock!,
+            CategoryId = (Guid)productUpdateRequest.CategoryId!,
+            UpdatedAt = DateTime.UtcNow
+        };
     }
-
+    
     private void MapToProduct(ProductUpdateRequest productUpdateRequest, Product product)
     {
         product.Name = productUpdateRequest.Name!;
@@ -177,6 +165,38 @@ public class ProductService : IProductService
         product.Stock = (int)productUpdateRequest.Stock!;
         product.CategoryId = (Guid)productUpdateRequest.CategoryId!;
         product.UpdatedAt = DateTime.UtcNow;
+    }
+
+    public async Task CreateProductAsync(ProductRequest productRequest)
+    {
+        try
+        {
+            var productCategory = await _unitOfWork.CategoryRepository.GetByIdAsync((Guid)productRequest.CategoryId!);
+            
+            await _unitOfWork.BeginTransactionAsync();
+            
+            if (productCategory is null)
+            {
+                throw new KeyNotFoundException("Category not found!");
+            }
+            
+            ValidatePictures(productRequest.Pictures);
+            
+            var product = MapToProduct(productRequest);
+            await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
+            
+            await _unitOfWork.ProductRepository.CreateAsync(product);
+            await _unitOfWork.SaveChangesAsync();
+            
+            await _cache.SetAsync(Constants.ProductCacheKey + product.Id, _mapper.Map<ProductResponse>(product));
+
+            await _unitOfWork.CommitTransactionAsync();
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw ex;
+        }
     }
 
     public async Task UpdateProductAsync(Guid id, ProductUpdateRequest productRequest)
@@ -208,11 +228,18 @@ public class ProductService : IProductService
             MapToProduct(productRequest, product);
             await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
             
+            await _unitOfWork.BeginTransactionAsync();
+            
             await _unitOfWork.ProductRepository.UpdateAsync(product);
             await _unitOfWork.SaveChangesAsync();
+            
+            await _cache.SetAsync(Constants.ProductCacheKey + product.Id, _mapper.Map<ProductResponse>(product));
+            
+            await _unitOfWork.CommitTransactionAsync();
         }
         catch (Exception ex)
         {
+            await _unitOfWork.RollbackTransactionAsync();
             throw ex;
         }
     }
