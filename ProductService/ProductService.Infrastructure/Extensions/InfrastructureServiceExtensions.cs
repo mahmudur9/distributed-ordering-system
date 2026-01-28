@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ProductService.Domain.ICache;
 using ProductService.Domain.IRepositories;
 using ProductService.Infrastructure.BackgroundServices;
 using ProductService.Infrastructure.Data;
 using ProductService.Infrastructure.Repositories;
+using StackExchange.Redis;
 
 namespace ProductService.Infrastructure.Extensions;
 
@@ -36,6 +38,18 @@ public static class InfrastructureServiceExtensions
             client.DefaultRequestHeaders.Add("Accept", "application/json");
             client.Timeout = TimeSpan.FromSeconds(10);
         });
+        
+        // Register Redis
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var redisConfig = ConfigurationOptions.Parse(configuration.GetRequiredSection("Services").GetValue<string>("RedisService")!,
+                true);
+
+            redisConfig.AbortOnConnectFail = false;
+            return ConnectionMultiplexer.Connect(redisConfig);
+        });
+
+        services.AddScoped<ICache, RedisCache.RedisCache>();
         
         return services;
     }
