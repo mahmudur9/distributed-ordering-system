@@ -35,8 +35,11 @@ services:
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=OrderService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
       - Services__ProductService=http://product-service-api:5000
       - Services__PaymentService=http://payment-service-api:5000
+      - Services__UserService=http://user-service-api:8000
     depends_on:
       - product-service
+      - user-service
+      - payment-service
     networks:
       - ordering-system-network
   
@@ -52,8 +55,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=PaymentService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+      - Services__UserService=http://user-service-api:8000
     depends_on:
-      - order-service
+      - user-service
     networks:
       - ordering-system-network
       

@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
+using System.Security.Claims;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
 using OrderService.Application.Responses;
@@ -16,13 +18,15 @@ public class OrderService : IOrderService
     private readonly IMapper _mapper;
     private readonly PaymentGrpcService.PaymentGrpcServiceClient _paymentGrpcServiceClient;
     private readonly ProductGrpcService.ProductGrpcServiceClient _productGrpcServiceClient;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, PaymentGrpcService.PaymentGrpcServiceClient paymentGrpcServiceClient, ProductGrpcService.ProductGrpcServiceClient productGrpcServiceClient)
+    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, PaymentGrpcService.PaymentGrpcServiceClient paymentGrpcServiceClient, ProductGrpcService.ProductGrpcServiceClient productGrpcServiceClient, IHttpContextAccessor httpContextAccessor)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _paymentGrpcServiceClient = paymentGrpcServiceClient;
         _productGrpcServiceClient = productGrpcServiceClient;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     private UpdateProductGrpcStockRequest MapProductStock(OrderRequest orderRequest)
@@ -52,6 +56,7 @@ public class OrderService : IOrderService
                 amount += product.ProductPrice * product.Quantity;
             }
             order.Amount = amount;
+            order.UserId = GetAuthenticatedUserId();
             
             await _unitOfWork.BeginTransactionAsync();
             
@@ -62,7 +67,7 @@ public class OrderService : IOrderService
             var productStockResponse = await _productGrpcServiceClient.VerifyAndUpdateProductStockAsync(productStock);
             if (!productStockResponse.Success)
             {
-                throw new Exception(productStockResponse.Error);
+                throw new ArgumentException(productStockResponse.Error);
             }
 
             var payment = new CreatePaymentGrpcRequest();
@@ -116,5 +121,49 @@ public class OrderService : IOrderService
         {
             throw ex;
         }
+    }
+
+    public async Task<PaginatedResponse<OrderResponse>> GetAllOrdersByUserIdAsync(GetAllOrdersFilter filter)
+    {
+        try
+        {
+            List<Expression<Func<Order, bool>>> filters = [];
+            filters.Add(x => x.IsActive == filter.IsActive &&  x.UserId == GetAuthenticatedUserId());
+            if (filter.DateFrom is not null) filters.Add(x => x.CreatedAt >= filter.DateFrom);
+            if (filter.DateTo is not null) filters.Add(x => x.CreatedAt <= filter.DateTo);
+
+            var orders = await _unitOfWork.OrderRepository.GetAllAsync(filters, [x => x.Products], filter.ItemsPerPage,
+                filter.PageNumber, x => x.OrderByDescending(order => order.CreatedAt));
+            var productCount = await _unitOfWork.OrderRepository.CountAsync(filters);
+            
+            var paginatedResponse = new PaginatedResponse<OrderResponse>(
+                _mapper.Map<IEnumerable<OrderResponse>>(orders),
+                productCount,
+                filter.ItemsPerPage, 
+                filter.PageNumber);
+
+            return paginatedResponse;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+    
+    private Guid GetAuthenticatedUserId()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var identity = user?.Identity as ClaimsIdentity;
+        var userId = identity!.Claims.FirstOrDefault(x => x.Type.Equals("userId"))!.Value;
+
+        return Guid.Parse(userId);
+    }
+
+    private string GetAuthenticatedUserRole()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var identity = user?.Identity as ClaimsIdentity;
+        var userRole = identity!.Claims.FirstOrDefault(x => x.Type.Equals("Role"))!.Value;
+        return userRole;
     }
 }

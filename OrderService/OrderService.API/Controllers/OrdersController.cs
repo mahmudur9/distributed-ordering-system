@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
@@ -16,6 +17,7 @@ public class OrdersController : ControllerBase
         _orderService = orderService;
     }
 
+    [Authorize(Roles = "User")]
     [HttpPost("CreateOrder")]
     public async Task<IActionResult> CreateOrder(OrderRequest orderRequest)
     {
@@ -29,5 +31,14 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> GetAll([FromQuery] GetAllOrdersFilter filters)
     {
         return Ok(await _orderService.GetAllOrdersAsync(filters));
+    }
+    
+    [Authorize(Roles = "User")]
+    [HttpGet("GetAllByUserId")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(PaginatedResponse<OrderResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllByUserId([FromQuery] GetAllOrdersFilter filters)
+    {
+        return Ok(await _orderService.GetAllOrdersByUserIdAsync(filters));
     }
 }

@@ -14,6 +14,8 @@ public static class ApplicationServiceExtensions
         // Register services
         services.AddScoped<IOrderService, Services.OrderService>();
 
+        services.AddHttpContextAccessor();
+
         return services;
     }
 }

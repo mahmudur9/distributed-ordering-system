@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.OpenApi.Models;
 using OrderService.API.Middlewares;
 using OrderService.Application.Extensions;
 using OrderService.Infrastructure.Extensions;
@@ -37,8 +39,50 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 
+// Remote jwt auth start
+builder.Services
+    .AddAuthentication("RemoteJwt")
+    .AddScheme<AuthenticationSchemeOptions, RemoteJwtAuthHandler>(
+        "RemoteJwt", null);
+
+builder.Services.AddAuthorization();
+// Remote jwt auth end
+
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "OrderService API",
+        Version = "v1"
+    });
+
+    // 🔐 Add JWT Authentication support
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer {your JWT token}'"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
