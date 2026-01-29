@@ -347,15 +347,23 @@ public class ProductService : IProductService
             {
                 if (product.Stock < 0)
                 {
-                    throw new Exception("Some products are out of stock!");
+                    throw new ArgumentException("Some products are out of stock!");
                 }
+            }
+
+            foreach (var product in products)
+            {
+                await _cache.SetJsonAsync(Constants.ProductCacheKey + product.Id, _mapper.Map<ProductResponse>(product));
             }
 
             await _unitOfWork.CommitTransactionAsync();
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackTransactionAsync();
+            if (ex is ArgumentException)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+            }
             throw ex;
         }
     }
