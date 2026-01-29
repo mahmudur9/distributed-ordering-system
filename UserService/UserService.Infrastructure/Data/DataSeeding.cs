@@ -6,7 +6,7 @@ namespace UserService.Infrastructure.Data;
 
 public static class DataSeeding
 {
-    public static async Task Seed(IServiceScopeFactory serviceScopeFactory)
+    public static async Task SeedAsync(IServiceScopeFactory serviceScopeFactory)
     {
         using var scope = serviceScopeFactory.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();

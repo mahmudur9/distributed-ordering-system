@@ -5,7 +5,7 @@ namespace UserService.Infrastructure.Data;
 
 public static class Migration
 {
-    public static async Task Migrate(IServiceScopeFactory serviceScopeFactory, CancellationToken cancellationToken)
+    public static async Task MigrateAsync(IServiceScopeFactory serviceScopeFactory, CancellationToken cancellationToken)
     {
         using var scope = serviceScopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DBContext>();
