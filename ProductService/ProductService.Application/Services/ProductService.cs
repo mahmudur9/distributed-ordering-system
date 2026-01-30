@@ -7,6 +7,7 @@ using ProductService.Application.IServices;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
 using ProductService.Domain.ICache;
+using ProductService.Domain.ILogging;
 using ProductService.Domain.IRepositories;
 using ProductService.Domain.Models;
 using ProductService.Infrastructure.Constants;
@@ -20,13 +21,16 @@ public class ProductService : IProductService
     private readonly IMapper _mapper;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ICache _cache;
+    private readonly IAppLogger<ProductService> _logger;
 
-    public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IHttpClientFactory httpClientFactory, ICache cache)
+    public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IHttpClientFactory httpClientFactory, ICache cache, 
+        IAppLogger<ProductService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _httpClientFactory = httpClientFactory;
         _cache = cache;
+        _logger = logger;
     }
 
     public async Task<PaginatedResponse<ProductResponse>> GetAllProductsAsync(GetAllProductsFilter filter)
@@ -53,7 +57,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            throw ex;
+            throw;
         }
     }
     
@@ -61,6 +65,7 @@ public class ProductService : IProductService
     {
         try
         {
+            _logger.LogInformation("Getting all products from redis");
             string query =  "@Category:{electronics} @IsActive:{true} ";
             if (!string.IsNullOrEmpty(filter.Name))
             {
@@ -81,7 +86,8 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to get all products");
+            throw;
         }
     }
 
@@ -99,7 +105,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            throw ex;
+            throw;
         }
     }
 
@@ -227,7 +233,7 @@ public class ProductService : IProductService
         catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            throw ex;
+            throw;
         }
     }
 
@@ -273,7 +279,7 @@ public class ProductService : IProductService
         catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            throw ex;
+            throw;
         }
     }
 
@@ -303,7 +309,7 @@ public class ProductService : IProductService
         catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            throw ex;
+            throw;
         }
     }
 
@@ -364,7 +370,7 @@ public class ProductService : IProductService
             {
                 await _unitOfWork.RollbackTransactionAsync();
             }
-            throw ex;
+            throw;
         }
     }
 }

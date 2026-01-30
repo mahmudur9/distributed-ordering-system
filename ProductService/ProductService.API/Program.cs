@@ -58,10 +58,10 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithProperty("service", "ProductService")
     .Enrich.WithProperty("environment", "production")
-    .WriteTo.Console(new RenderedCompactJsonFormatter())
-    .WriteTo.File(
+    .WriteTo.Console(new RenderedCompactJsonFormatter()) // This line is responsible for producing the docker logs
+    .WriteTo.File( // This line writes logs in files inside the container
         new RenderedCompactJsonFormatter(),
-        "logs/app-.log",
+        "logs/productservice-.log",
         rollingInterval: RollingInterval.Day)
     .CreateLogger();
 

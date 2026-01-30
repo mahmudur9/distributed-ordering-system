@@ -1,0 +1,30 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: product-service
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: product-service
+          service: ProductService
+          environment: production
+          __path__: /app/logs/productservice-*.log
+          
+  - job_name: order-service
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: order-service
+          service: OrderService
+          environment: production
+          __path__: /app/logs/orderservice-*.log

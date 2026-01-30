@@ -21,6 +21,8 @@ services:
       - redis
     networks:
       - ordering-system-network
+    volumes:
+      - ./logs:/app/logs
       
   order-service:
     build:
@@ -111,6 +113,34 @@ services:
     environment:
       SA_PASSWORD: "Mahmudur123"
       ACCEPT_EULA: "Y"
+    networks:
+      - ordering-system-network
+      
+  promtail:
+    image: grafana/promtail:latest
+    container_name: ordering-system-promtail
+    volumes:
+      - ./logs:/app/logs
+      - ./promtail-config.yaml:/etc/promtail/promtail-config.yaml
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    networks:
+      - ordering-system-network
+      
+  loki:
+    image: grafana/loki:2.9.1
+    container_name: ordering-system-loki
+    ports:
+      - "3100:3100"
+    networks:
+      - ordering-system-network
+      
+  grafana:
+    image: grafana/grafana
+    container_name: ordering-system-grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - loki
     networks:
       - ordering-system-network
 
