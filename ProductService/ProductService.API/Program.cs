@@ -6,6 +6,8 @@ using ProductService.API.Grpc;
 using ProductService.API.Middlewares;
 using ProductService.Application.Extensions;
 using ProductService.Infrastructure.Extensions;
+using Serilog;
+using Serilog.Formatting.Compact;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +51,21 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddMemoryCache();
 // Remote jwt auth end
+
+// Configure serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("service", "ProductService")
+    .Enrich.WithProperty("environment", "production")
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
+    .WriteTo.File(
+        new RenderedCompactJsonFormatter(),
+        "logs/app-.log",
+        rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -96,6 +113,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseCors("AllowAll");
 

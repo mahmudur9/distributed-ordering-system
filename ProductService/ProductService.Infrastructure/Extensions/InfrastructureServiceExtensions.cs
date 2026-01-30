@@ -2,10 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ProductService.Domain.ICache;
+using ProductService.Domain.ILogging;
 using ProductService.Domain.IRepositories;
 using ProductService.Infrastructure.BackgroundServices;
 using ProductService.Infrastructure.Cache;
 using ProductService.Infrastructure.Data;
+using ProductService.Infrastructure.Logging;
 using ProductService.Infrastructure.Repositories;
 using StackExchange.Redis;
 
@@ -50,7 +52,11 @@ public static class InfrastructureServiceExtensions
             return ConnectionMultiplexer.Connect(redisConfig);
         });
 
+        // Register redis caching
         services.AddScoped<ICache, RedisCache>();
+
+        // Register logging
+        services.AddScoped(typeof(IAppLogger<>), typeof(SerilogAppLogger<>));
         
         return services;
     }
