@@ -37,6 +37,7 @@ public class ProductService : IProductService
     {
         try
         {
+            _logger.LogInformation("Getting all products from database");
             List<Expression<Func<Product, bool>>> filters = [];
             filters.Add(x => x.IsActive == filter.IsActive);
             if (filter.Name is not null) filters.Add(x => x.Name.ToLower().Contains(filter.Name.ToLower()));
@@ -57,6 +58,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to get all products from database");
             throw;
         }
     }
@@ -95,6 +97,7 @@ public class ProductService : IProductService
     {
         try
         {
+            _logger.LogInformation($"Getting product with id {id} from redis");
             string? product = await _cache.GetJsonAsync(Constants.ProductCacheKey + id);
             if (product is null)
             {
@@ -105,6 +108,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, $"Failed to get product with id {id} from redis");
             throw;
         }
     }
@@ -209,6 +213,7 @@ public class ProductService : IProductService
     {
         try
         {
+            _logger.LogInformation("Creating new product");
             var productCategory = await _unitOfWork.CategoryRepository.GetByIdAsync((Guid)productRequest.CategoryId!);
 
             await _unitOfWork.BeginTransactionAsync();
@@ -233,6 +238,7 @@ public class ProductService : IProductService
         catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
+            _logger.LogError(ex, "Failed to create product");
             throw;
         }
     }
@@ -241,6 +247,7 @@ public class ProductService : IProductService
     {
         try
         {
+            _logger.LogInformation("Updating product");
             var product = await _unitOfWork.ProductRepository.GetAsync([x => x.Id == id],
                 [x => x.Pictures.Where(p => p.IsActive)]);
             if (product is null)
@@ -278,6 +285,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to update product");
             await _unitOfWork.RollbackTransactionAsync();
             throw;
         }
@@ -287,6 +295,7 @@ public class ProductService : IProductService
     {
         try
         {
+            _logger.LogInformation("Deleting product");
             var product = await _unitOfWork.ProductRepository.GetByIdAsync(id);
 
             await _unitOfWork.BeginTransactionAsync();
@@ -308,6 +317,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to delete product");
             await _unitOfWork.RollbackTransactionAsync();
             throw;
         }
@@ -317,6 +327,7 @@ public class ProductService : IProductService
     {
         try
         {
+            _logger.LogInformation("Verifying to update product stock");
             var products = await _unitOfWork.ProductRepository.GetAllAsync([
                 x =>
                     updateProductStockRequest.Select(p => p.Id).Contains(x.Id) && x.IsActive
@@ -370,6 +381,7 @@ public class ProductService : IProductService
             {
                 await _unitOfWork.RollbackTransactionAsync();
             }
+            _logger.LogError(ex, "Failed to update product stock");
             throw;
         }
     }

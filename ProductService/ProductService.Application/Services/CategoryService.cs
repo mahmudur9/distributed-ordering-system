@@ -3,6 +3,7 @@ using AutoMapper;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
+using ProductService.Domain.ILogging;
 using ProductService.Domain.IRepositories;
 using ProductService.Domain.Models;
 
@@ -12,15 +13,20 @@ public class CategoryService : ICategoryService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    public CategoryService(IUnitOfWork unitOfWork, IMapper mapper)
+    private readonly IAppLogger<CategoryService> _logger;
+    
+    public CategoryService(IUnitOfWork unitOfWork, IMapper mapper, IAppLogger<CategoryService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _logger = logger;
     }
+    
     public async Task<PaginatedResponse<CategoryResponse>> GetAllCategoriesAsync(GetAllCategoriesFilter filter)
     {
         try
         {
+            _logger.LogInformation("Getting all categories from database");
             List<Expression<Func<Category, bool>>> filters = [];
             filters.Add(x => x.IsActive == filter.IsActive);
             if (filter.Name is not null) filters.Add(x => x.Name.ToLower().Contains(filter.Name.ToLower()));
@@ -38,7 +44,8 @@ public class CategoryService : ICategoryService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to get all categories from database");
+            throw;
         }
     }
 
@@ -46,6 +53,7 @@ public class CategoryService : ICategoryService
     {
         try
         {
+            _logger.LogInformation($"Getting category with id {id}");
             var category = await _unitOfWork.CategoryRepository.GetByIdAsync(id);
             if (category is null)
             {
@@ -55,7 +63,8 @@ public class CategoryService : ICategoryService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to get category with id {id}");
+            throw;
         }
     }
 
@@ -63,6 +72,7 @@ public class CategoryService : ICategoryService
     {
         try
         {
+            _logger.LogInformation("Creating new category");
             var category = _mapper.Map<Category>(categoryRequest);
             category.CreatedAt = DateTime.UtcNow;
             category.UpdatedAt = DateTime.UtcNow;
@@ -72,7 +82,8 @@ public class CategoryService : ICategoryService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to create category");
+            throw;
         }
     }
 
@@ -80,6 +91,7 @@ public class CategoryService : ICategoryService
     {
         try
         {
+            _logger.LogInformation("Updating category");
             var category = await _unitOfWork.CategoryRepository.GetByIdAsync(id);
             if (category is null)
             {
@@ -93,7 +105,8 @@ public class CategoryService : ICategoryService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to update category");
+            throw;
         }
     }
 
@@ -101,6 +114,7 @@ public class CategoryService : ICategoryService
     {
         try
         {
+            _logger.LogInformation("Deleting category");
             var category = await _unitOfWork.CategoryRepository.GetByIdAsync(id);
             if (category is null)
             {
@@ -123,7 +137,8 @@ public class CategoryService : ICategoryService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to delete category");
+            throw;
         }
     }
 }
