@@ -359,7 +359,7 @@ public class ProductService : IProductService
 
             foreach (var product in products)
             {
-                await _cache.SetJsonAsync(Constants.ProductCacheKey + product.Id, _mapper.Map<ProductResponse>(product));
+                await _cache.SetJsonAsync(Constants.ProductCacheKey + product.Id,"Stock", product.Stock);
             }
 
             await _unitOfWork.CommitTransactionAsync();

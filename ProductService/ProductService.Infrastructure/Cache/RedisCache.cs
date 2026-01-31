@@ -22,6 +22,15 @@ public class RedisCache : ICache
         }
     }
 
+    public async Task SetJsonAsync<T>(string key, string path, T value, int? ttl = null)
+    {
+        await _database.ExecuteAsync("JSON.SET", key, "$." + path, value!);
+        if (ttl is not null)
+        {
+            await _database.ExecuteAsync("EXPIRE", key, "EX", ttl); // Time to live in second
+        }
+    }
+
     public async Task<string?> GetJsonAsync(string key)
     {
         var result = await _database.ExecuteAsync("JSON.GET", key);
