@@ -19,6 +19,25 @@ scrape_configs:
           environment: production
           __path__: /app/logs/productservice-*.log
           
+    pipeline_stages:
+      - json:
+          expressions:
+            level: '"@l"'
+            message: '"@mt"'
+            ts: '"@t"'
+            
+      # Default to Information if level is missing      
+      - template:
+          source: level
+          template: '{{ if .Value }}{{ .Value }}{{ else }}Information{{ end }}'    
+
+      - labels:
+          level:
+
+      - timestamp:
+          source: ts
+          format: RFC3339      
+          
   - job_name: order-service
     static_configs:
       - targets:
