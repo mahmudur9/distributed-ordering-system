@@ -11,7 +11,6 @@ using ProductService.Domain.ILogging;
 using ProductService.Domain.IRepositories;
 using ProductService.Domain.Models;
 using ProductService.Infrastructure.Constants;
-using StackExchange.Redis;
 
 namespace ProductService.Application.Services;
 

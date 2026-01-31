@@ -6,6 +6,7 @@ using ProductService.API.Grpc;
 using ProductService.API.Middlewares;
 using ProductService.Application.Extensions;
 using ProductService.Infrastructure.Extensions;
+using Prometheus;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -120,6 +121,9 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 
 app.UseAuthorization();
+
+// Prometheus matrics
+app.MapMetrics();
 
 app.MapGrpcService<ProductGrpc>();
 app.MapControllers();
