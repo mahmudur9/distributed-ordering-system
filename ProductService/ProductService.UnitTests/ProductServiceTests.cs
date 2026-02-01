@@ -1,5 +1,4 @@
 using AutoMapper;
-using Microsoft.Extensions.Logging;
 using Moq;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
@@ -7,21 +6,20 @@ using ProductService.Domain.ICache;
 using ProductService.Domain.ILogging;
 using ProductService.Domain.IRepositories;
 using ProductService.Domain.Models;
-using LogLevel = Microsoft.Identity.Client.LogLevel;
 
-namespace ProductService.Application.Tests;
+namespace ProductService.UnitTests;
 
 public class ProductServiceTests
 {
     private readonly Mock<ICache> _cacheMock = new();
     private readonly Mock<ICategoryRepository> _categoryRepoMock = new();
     private readonly Mock<IHttpClientFactory> _httpFactoryMock = new();
-    private readonly Mock<IAppLogger<Services.ProductService>> _loggerMock = new();
+    private readonly Mock<IAppLogger<Application.Services.ProductService>> _loggerMock = new();
 
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<IProductRepository> _productRepoMock = new();
 
-    private readonly Services.ProductService _service;
+    private readonly Application.Services.ProductService _service;
     private readonly Mock<IUnitOfWork> _uowMock = new();
 
     public ProductServiceTests()
@@ -32,7 +30,7 @@ public class ProductServiceTests
         _uowMock.Setup(x => x.ProductRepository)
             .Returns(_productRepoMock.Object);
 
-        _service = new Services.ProductService(
+        _service = new Application.Services.ProductService(
             _uowMock.Object,
             _mapperMock.Object,
             _httpFactoryMock.Object,
@@ -97,7 +95,7 @@ public class ProductServiceTests
 
         _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Never);
     }
-    
+
     [Fact]
     public async Task CreateProductAsync_WhenRepositoryFails_ShouldRollback_AndLogError()
     {
@@ -141,5 +139,4 @@ public class ProductServiceTests
                 It.Is<string>(s => s == "Failed to create product")),
             Times.Once);
     }
-
 }
