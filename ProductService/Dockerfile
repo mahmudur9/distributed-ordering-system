@@ -1,5 +1,3 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER $APP_UID
@@ -17,14 +15,25 @@ COPY ["ProductService.API/ProductService.API.csproj", "ProductService.API/"]
 COPY ["ProductService.Application/ProductService.Application.csproj", "ProductService.Application/"]
 COPY ["ProductService.Domain/ProductService.Domain.csproj", "ProductService.Domain/"]
 COPY ["ProductService.Infrastructure/ProductService.Infrastructure.csproj", "ProductService.Infrastructure/"]
+COPY ["ProductService.UnitTests/ProductService.UnitTests.csproj", "ProductService.UnitTests/"]
 RUN dotnet restore "./ProductService.API/ProductService.API.csproj"
 COPY . .
 WORKDIR "/src/ProductService.API"
 RUN dotnet build "./ProductService.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
+FROM build AS test
+
+WORKDIR /src/ProductService.UnitTests
+
+# If tests fail → docker build fails automatically
+RUN dotnet test "ProductService.UnitTests.csproj" -c $BUILD_CONFIGURATION --verbosity normal
+
 # This stage is used to publish the service project to be copied to the final stage
-FROM build AS publish
+FROM test AS publish
 ARG BUILD_CONFIGURATION=Release
+
+WORKDIR /src/ProductService.API
+
 RUN dotnet publish "./ProductService.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
