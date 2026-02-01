@@ -59,6 +59,7 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithProperty("service", "ProductService")
     .Enrich.WithProperty("environment", "production")
+    .Filter.ByExcluding("RequestPath = '/metrics'") // Exclude prometheus logs
     .WriteTo.Console(new RenderedCompactJsonFormatter()) // This line is responsible for producing the docker logs
     .WriteTo.File( // This line writes logs in files inside the container
         new RenderedCompactJsonFormatter(),
