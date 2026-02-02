@@ -1,7 +1,5 @@
 using System.Linq.Expressions;
-using System.Security.Claims;
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
 using OrderService.Application.Responses;
@@ -18,15 +16,15 @@ public class OrderService : IOrderService
     private readonly IMapper _mapper;
     private readonly PaymentGrpcService.PaymentGrpcServiceClient _paymentGrpcServiceClient;
     private readonly ProductGrpcService.ProductGrpcServiceClient _productGrpcServiceClient;
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IAuthService  _authService;
 
-    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, PaymentGrpcService.PaymentGrpcServiceClient paymentGrpcServiceClient, ProductGrpcService.ProductGrpcServiceClient productGrpcServiceClient, IHttpContextAccessor httpContextAccessor)
+    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, PaymentGrpcService.PaymentGrpcServiceClient paymentGrpcServiceClient, ProductGrpcService.ProductGrpcServiceClient productGrpcServiceClient, IAuthService authService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _paymentGrpcServiceClient = paymentGrpcServiceClient;
         _productGrpcServiceClient = productGrpcServiceClient;
-        _httpContextAccessor = httpContextAccessor;
+        _authService = authService;
     }
 
     private UpdateProductGrpcStockRequest MapProductStock(OrderRequest orderRequest)
@@ -56,7 +54,7 @@ public class OrderService : IOrderService
                 amount += product.ProductPrice * product.Quantity;
             }
             order.Amount = amount;
-            order.UserId = GetAuthenticatedUserId();
+            order.UserId = _authService.GetAuthenticatedUserId();
             
             await _unitOfWork.BeginTransactionAsync();
             
@@ -128,7 +126,7 @@ public class OrderService : IOrderService
         try
         {
             List<Expression<Func<Order, bool>>> filters = [];
-            filters.Add(x => x.IsActive == filter.IsActive &&  x.UserId == GetAuthenticatedUserId());
+            filters.Add(x => x.IsActive == filter.IsActive &&  x.UserId == _authService.GetAuthenticatedUserId());
             if (filter.DateFrom is not null) filters.Add(x => x.CreatedAt >= filter.DateFrom);
             if (filter.DateTo is not null) filters.Add(x => x.CreatedAt <= filter.DateTo);
 
@@ -148,22 +146,5 @@ public class OrderService : IOrderService
         {
             throw ex;
         }
-    }
-    
-    private Guid GetAuthenticatedUserId()
-    {
-        var user = _httpContextAccessor.HttpContext?.User;
-        var identity = user?.Identity as ClaimsIdentity;
-        var userId = identity!.Claims.FirstOrDefault(x => x.Type.Equals("userId"))!.Value;
-
-        return Guid.Parse(userId);
-    }
-
-    private string GetAuthenticatedUserRole()
-    {
-        var user = _httpContextAccessor.HttpContext?.User;
-        var identity = user?.Identity as ClaimsIdentity;
-        var userRole = identity!.Claims.FirstOrDefault(x => x.Type.Equals("Role"))!.Value;
-        return userRole;
     }
 }
