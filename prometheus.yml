@@ -12,4 +12,8 @@ scrape_configs:
       
   - job_name: "user-service-api"
     static_configs:
-      - targets: ["user-service-api:8000"]    
+      - targets: ["user-service-api:8000"]
+      
+  - job_name: "payment-service-api"
+    static_configs:
+      - targets: ["payment-service-api:8000"]

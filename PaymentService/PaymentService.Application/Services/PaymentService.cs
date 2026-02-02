@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.Extensions.Logging;
 using PaymentService.Application.IServices;
 using PaymentService.Application.Requests;
 using PaymentService.Application.Responses;
@@ -11,17 +12,20 @@ public class PaymentService : IPaymentService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly ILogger<PaymentService> _logger;
 
-    public PaymentService(IUnitOfWork unitOfWork, IMapper mapper)
+    public PaymentService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<PaymentService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<PaginatedResponse<PaymentResponse>> GetAllPaymentsAsync(GetAllPaymentsFilter filter)
     {
         try
         {
+            _logger.LogInformation("Getting all payments");
             var payments = await _unitOfWork.PaymentRepository.GetAllPaymentsAsync(
                 filter.IsActive, filter.DateFrom, filter.DateTo, filter.PaymentId, filter.ItemsPerPage, filter.PageNumber);
             var paymentTypeCount = await _unitOfWork.PaymentRepository.GetAllPaymentCountAsync(
@@ -37,7 +41,8 @@ public class PaymentService : IPaymentService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to get all payments");
+            throw;
         }
     }
 
@@ -45,6 +50,7 @@ public class PaymentService : IPaymentService
     {
         try
         {
+            _logger.LogInformation($"Getting payment with id {id}");
             var payment = await _unitOfWork.PaymentRepository.GetByIdAsync(id);
             if (payment is null)
             {
@@ -55,7 +61,8 @@ public class PaymentService : IPaymentService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to get payment with id {id}");
+            throw;
         }
     }
 
@@ -63,6 +70,7 @@ public class PaymentService : IPaymentService
     {
         try
         {
+            _logger.LogInformation("Creating a new payment");
             if (paymentRequest.PaymentMethodId is null)
             {
                 if (await _unitOfWork.PaymentTypeRepository.PaymentTypeHasAnyPaymentMethodAsync(paymentRequest
@@ -86,7 +94,8 @@ public class PaymentService : IPaymentService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to create payment");
+            throw;
         }
     }
 
@@ -94,6 +103,7 @@ public class PaymentService : IPaymentService
     {
         try
         {
+            _logger.LogInformation($"Updating a payment with id {id}");
             var payment = await _unitOfWork.PaymentRepository.GetByIdAsync(id);
             if (payment is null)
             {
@@ -106,7 +116,8 @@ public class PaymentService : IPaymentService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to update payment with id {id}");
+            throw;
         }
     }
 
@@ -114,6 +125,7 @@ public class PaymentService : IPaymentService
     {
         try
         {
+            _logger.LogInformation($"Deleting a payment with id {id}");
             var payment = await _unitOfWork.PaymentRepository.GetByIdAsync(id);
             if (payment is null)
             {
@@ -127,7 +139,8 @@ public class PaymentService : IPaymentService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to delete payment with id {id}");
+            throw;
         }
     }
 }

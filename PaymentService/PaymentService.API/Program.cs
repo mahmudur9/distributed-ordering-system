@@ -2,6 +2,9 @@ using PaymentService.API.Grpc;
 using PaymentService.API.Middlewares;
 using PaymentService.Application.Extensions;
 using PaymentService.Infrastructure.Extensions;
+using Prometheus;
+using Serilog;
+using Serilog.Formatting.Compact;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +41,22 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 
+// Configure serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("service", "PaymentService")
+    .Enrich.WithProperty("environment", "production")
+    .Filter.ByExcluding("RequestPath = '/metrics'")
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
+    .WriteTo.File(
+        new RenderedCompactJsonFormatter(),
+        "logs/paymentservice-.log",
+        rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -55,6 +74,9 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseCors("AllowAll");
 
 app.UseAuthorization();
+
+// Prometheus metrics
+app.MapMetrics();
 
 app.MapGrpcService<PaymentGrpc>();
 app.MapControllers();

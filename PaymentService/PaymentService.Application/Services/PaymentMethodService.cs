@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.Extensions.Logging;
 using PaymentService.Application.IServices;
 using PaymentService.Application.Requests;
 using PaymentService.Application.Responses;
@@ -11,17 +12,20 @@ public class PaymentMethodService : IPaymentMethodService
 {
     private readonly IUnitOfWork _unitOfWork;
     private  readonly IMapper _mapper;
+    private readonly ILogger<PaymentMethodService> _logger;
 
-    public PaymentMethodService(IUnitOfWork unitOfWork, IMapper mapper)
+    public PaymentMethodService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<PaymentMethodService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<PaginatedResponse<PaymentMethodResponse>> GetAllPaymentMethodsAsync(GetAllPaymentMethodsFilter filter)
     {
         try
         {
+            _logger.LogInformation("Getting all payment methods");
             var paymentMethods = await _unitOfWork.PaymentMethodRepository.GetAllPaymentMethodsAsync(filter.Name, 
                 filter.IsActive, filter.ItemsPerPage, filter.PageNumber);
             var paymentTypeCount = await _unitOfWork.PaymentMethodRepository.GetAllPaymentMethodCountAsync(filter.Name, 
@@ -37,7 +41,8 @@ public class PaymentMethodService : IPaymentMethodService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to get all payments methods");
+            throw;
         }
     }
 
@@ -45,6 +50,7 @@ public class PaymentMethodService : IPaymentMethodService
     {
         try
         {
+            _logger.LogInformation($"Getting payment method with id {id}");
             var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetByIdAsync(id);
             if (paymentMethod is null)
             {
@@ -54,7 +60,8 @@ public class PaymentMethodService : IPaymentMethodService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to get payment method with id {id}");
+            throw;
         }
     }
 
@@ -62,13 +69,15 @@ public class PaymentMethodService : IPaymentMethodService
     {
         try
         {
+            _logger.LogInformation("Creating a new payment method");
             var paymentMethod = _mapper.Map<PaymentMethod>(paymentMethodRequest);
             await _unitOfWork.PaymentMethodRepository.CreateAsync(paymentMethod);
             await _unitOfWork.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to create payment method");
+            throw;
         }
     }
 
@@ -76,6 +85,7 @@ public class PaymentMethodService : IPaymentMethodService
     {
         try
         {
+            _logger.LogInformation($"Updating a payment method with id {id}");
             var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetByIdAsync(id);
             if (paymentMethod is null)
             {
@@ -89,7 +99,8 @@ public class PaymentMethodService : IPaymentMethodService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to update payment method with id {id}");
+            throw;
         }
     }
 
@@ -97,6 +108,7 @@ public class PaymentMethodService : IPaymentMethodService
     {
         try
         {
+            _logger.LogInformation($"Deleting a payment method with id {id}");
             var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetByIdAsync(id);
             if (paymentMethod is null)
             {
@@ -110,7 +122,8 @@ public class PaymentMethodService : IPaymentMethodService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to delete payment method with id {id}");
+            throw;
         }
     }
 }

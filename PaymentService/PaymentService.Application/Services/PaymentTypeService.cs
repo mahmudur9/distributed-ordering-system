@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.Extensions.Logging;
 using PaymentService.Application.IServices;
 using PaymentService.Application.Requests;
 using PaymentService.Application.Responses;
@@ -11,17 +12,20 @@ public class PaymentTypeService : IPaymentTypeService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly ILogger<PaymentTypeService> _logger;
 
-    public PaymentTypeService(IUnitOfWork unitOfWork, IMapper mapper)
+    public PaymentTypeService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<PaymentTypeService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<PaginatedResponse<PaymentTypeResponse>> GetAllPaymentTypesAsync(GetAllPaymentTypesFilter filter)
     {
         try
         {
+            _logger.LogInformation("Getting all payment types");
             var paymentTypes = await _unitOfWork.PaymentTypeRepository.GetAllPaymentTypesAsync(filter.Name, 
                 filter.IsActive, filter.ItemsPerPage, filter.PageNumber);
             var paymentTypeCount = await _unitOfWork.PaymentTypeRepository.GetAllPaymentTypeCountAsync(filter.Name, 
@@ -37,7 +41,8 @@ public class PaymentTypeService : IPaymentTypeService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to get all payments types");
+            throw;
         }
     }
 
@@ -45,6 +50,7 @@ public class PaymentTypeService : IPaymentTypeService
     {
         try
         {
+            _logger.LogInformation($"Getting payment type with id {id}");
             var paymentType = await _unitOfWork.PaymentTypeRepository.GetByIdAsync(id);
             if (paymentType is null)
             {
@@ -54,7 +60,8 @@ public class PaymentTypeService : IPaymentTypeService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to get payment type with id {id}");
+            throw;
         }
     }
 
@@ -62,13 +69,15 @@ public class PaymentTypeService : IPaymentTypeService
     {
         try
         {
+            _logger.LogInformation("Creating a new payment type");
             var paymentType = _mapper.Map<PaymentType>(paymentTypeRequest);
             await _unitOfWork.PaymentTypeRepository.CreateAsync(paymentType);
             await _unitOfWork.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to create payment type");
+            throw;
         }
     }
 
@@ -76,6 +85,7 @@ public class PaymentTypeService : IPaymentTypeService
     {
         try
         {
+            _logger.LogInformation($"Updating a payment type with id {id}");
             var paymentType = await _unitOfWork.PaymentTypeRepository.GetByIdAsync(id);
             if (paymentType is null)
             {
@@ -89,7 +99,8 @@ public class PaymentTypeService : IPaymentTypeService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to update payment type with id {id}");
+            throw;
         }
     }
 
@@ -97,6 +108,7 @@ public class PaymentTypeService : IPaymentTypeService
     {
         try
         {
+            _logger.LogInformation($"Deleting a payment type with id {id}");
             var paymentType = await _unitOfWork.PaymentTypeRepository.GetByIdAsync(id);
             if (paymentType is null)
             {
@@ -110,7 +122,8 @@ public class PaymentTypeService : IPaymentTypeService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to delete payment type with id {id}");
+            throw;
         }
     }
 }

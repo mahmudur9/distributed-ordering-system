@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PaymentService.Domain.ILogging;
 using PaymentService.Domain.IRepositories;
 using PaymentService.Infrastructure.BackgroundServices;
 using PaymentService.Infrastructure.Data;
+using PaymentService.Infrastructure.Logging;
 using PaymentService.Infrastructure.Repositories;
 
 namespace PaymentService.Infrastructure.Extensions;
@@ -21,6 +23,9 @@ public static class InfrastructureServiceExtensions
         
         // Register background services
         services.AddHostedService<BackgroundWorkerService>();
+        
+        // Register logging
+        services.AddScoped(typeof(IAppLogger<>), typeof(SerilogAppLogger<>));
         
         return services;
     }

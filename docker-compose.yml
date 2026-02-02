@@ -64,6 +64,8 @@ services:
       - user-service
     networks:
       - ordering-system-network
+    volumes:
+      - ./logs:/app/logs  
       
   user-service:
     build:
