@@ -123,7 +123,7 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
-// Prometheus matrics
+// Prometheus metrics
 app.MapMetrics();
 
 app.MapGrpcService<ProductGrpc>();
