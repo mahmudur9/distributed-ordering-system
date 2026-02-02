@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OrderService.Domain.ILogging;
 using OrderService.Domain.IRepositories;
 using OrderService.Infrastructure.BackgroundServices;
 using OrderService.Infrastructure.Data;
+using OrderService.Infrastructure.Logging;
 using OrderService.Infrastructure.Repositories;
 using PaymentService.API;
 using ProductService.API;
@@ -43,7 +45,11 @@ public static class InfrastructureServiceExtensions
             client.Timeout = TimeSpan.FromSeconds(10);
         });
         
+        // Register in-memory cache
         services.AddMemoryCache();
+        
+        // Register serilog
+        services.AddScoped(typeof(IAppLogger<>), typeof(SerilogAppLogger<>));
 
         return services;
     }

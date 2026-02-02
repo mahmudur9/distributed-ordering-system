@@ -3,6 +3,8 @@ using Microsoft.OpenApi.Models;
 using OrderService.API.Middlewares;
 using OrderService.Application.Extensions;
 using OrderService.Infrastructure.Extensions;
+using Serilog;
+using Serilog.Formatting.Compact;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,6 +49,22 @@ builder.Services
 
 builder.Services.AddAuthorization();
 // Remote jwt auth end
+
+// Configure serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("service", "OrderService")
+    .Enrich.WithProperty("environment", "production")
+    .Filter.ByExcluding("RequestPath = '/metrics'")
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
+    .WriteTo.File(
+        new RenderedCompactJsonFormatter(),
+        "logs/productservice-.log",
+        rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
