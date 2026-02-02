@@ -6,6 +6,7 @@ using ProductService.Domain.ICache;
 using ProductService.Domain.ILogging;
 using ProductService.Domain.IRepositories;
 using ProductService.Domain.Models;
+using ProductService.Infrastructure.Constants;
 
 namespace ProductService.UnitTests;
 
@@ -74,8 +75,7 @@ public class ProductServiceTests
         _uowMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
         _uowMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
         _uowMock.Setup(x => x.CommitTransactionAsync()).Returns(Task.CompletedTask);
-
-        // If MapToProduct uses mapper internally
+        
         var productResponse = new ProductResponse();
         _mapperMock
             .Setup(x => x.Map<ProductResponse>(It.IsAny<Product>()))
@@ -90,6 +90,9 @@ public class ProductServiceTests
         _productRepoMock.Verify(x => x.CreateAsync(It.IsAny<Product>()), Times.Once);
 
         _uowMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        
+        _cacheMock.Verify(x => x.SetJsonAsync(Constants.ProductCacheKeyPrefix + productResponse.Id, 
+            productResponse, It.IsAny<int?>()));
 
         _uowMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
 

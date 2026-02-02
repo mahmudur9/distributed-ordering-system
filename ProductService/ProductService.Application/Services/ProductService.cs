@@ -97,7 +97,7 @@ public class ProductService : IProductService
         try
         {
             _logger.LogInformation($"Getting product with id {id} from redis");
-            string? product = await _cache.GetJsonAsync(Constants.ProductCacheKey + id);
+            string? product = await _cache.GetJsonAsync(Constants.ProductCacheKeyPrefix + id);
             if (product is null)
             {
                 throw new Exception($"Product with id {id} not found");
@@ -230,7 +230,7 @@ public class ProductService : IProductService
             await _unitOfWork.ProductRepository.CreateAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
-            await _cache.SetJsonAsync(Constants.ProductCacheKey + product.Id, _mapper.Map<ProductResponse>(product));
+            await _cache.SetJsonAsync(Constants.ProductCacheKeyPrefix + product.Id, _mapper.Map<ProductResponse>(product));
 
             await _unitOfWork.CommitTransactionAsync();
         }
@@ -278,7 +278,7 @@ public class ProductService : IProductService
             await _unitOfWork.ProductRepository.UpdateAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
-            await _cache.SetJsonAsync(Constants.ProductCacheKey + product.Id, _mapper.Map<ProductResponse>(product));
+            await _cache.SetJsonAsync(Constants.ProductCacheKeyPrefix + product.Id, _mapper.Map<ProductResponse>(product));
 
             await _unitOfWork.CommitTransactionAsync();
         }
@@ -310,7 +310,7 @@ public class ProductService : IProductService
             await _unitOfWork.ProductRepository.UpdateAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
-            await _cache.DeleteJsonAsync(Constants.ProductCacheKey + product.Id);
+            await _cache.DeleteJsonAsync(Constants.ProductCacheKeyPrefix + product.Id);
 
             await _unitOfWork.CommitTransactionAsync();
         }
@@ -369,7 +369,7 @@ public class ProductService : IProductService
 
             foreach (var product in products)
             {
-                await _cache.SetJsonAsync(Constants.ProductCacheKey + product.Id,"Stock", product.Stock);
+                await _cache.SetJsonAsync(Constants.ProductCacheKeyPrefix + product.Id,"Stock", product.Stock);
             }
 
             await _unitOfWork.CommitTransactionAsync();

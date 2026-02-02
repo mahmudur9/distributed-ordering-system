@@ -7,7 +7,7 @@ public static class Constants
     public const int PictureFromFile = 2;
     
     // Caching keys
-    public const string ProductCacheKey = "product:";
+    public const string ProductCacheKeyPrefix = "product:";
     
     // Caching indexes
     public const string ProductCacheIndex = "idx:products";
