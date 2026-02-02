@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ObjectStoreService.Domain.ILogging;
 using ObjectStoreService.Domain.IRepositories;
 using ObjectStoreService.Infrastructure.BackgroundServices;
 using ObjectStoreService.Infrastructure.Data;
+using ObjectStoreService.Infrastructure.Logging;
 using ObjectStoreService.Infrastructure.Repositories;
 
 namespace ObjectStoreService.Infrastructure.Extensions;
@@ -20,11 +22,11 @@ public static class InfrastructureServiceExtensions
         // Register repositories
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         
-        // Register gRPC clients
-        
-        
         // Register background services
         services.AddHostedService<BackgroundWorkerService>();
+        
+        // Register logger
+        services.AddScoped(typeof(IAppLogger<>), typeof(SerilogAppLogger<>));
 
 
         return services;

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using ObjectStoreService.Application.IServices;
 using ObjectStoreService.Application.Requests;
 using ObjectStoreService.Application.Responses;
@@ -9,11 +10,11 @@ namespace ObjectStoreService.Application.Services;
 
 public class MediaService : IMediaService
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ILogger<MediaService> _logger;
 
-    public MediaService(IHttpContextAccessor httpContextAccessor)
+    public MediaService(ILogger<MediaService> logger)
     {
-        _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
 
     private async Task ImageResizeAndSaveAsync(string path, IFormFile file)
@@ -44,6 +45,7 @@ public class MediaService : IMediaService
     {
         try
         {
+            _logger.LogInformation("Uploading file");
             var file = mediaRequest.MediaFile;
             string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
             string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", fileName);
@@ -64,7 +66,8 @@ public class MediaService : IMediaService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to upload");
+            throw;
         }
     }
 
@@ -72,6 +75,7 @@ public class MediaService : IMediaService
     {
         try
         {
+            _logger.LogInformation("Deleting file");
             string fileName = mediaDeleteRequest.Url.Split('/').Last();
             string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", fileName);
             if (File.Exists(path))
@@ -85,7 +89,8 @@ public class MediaService : IMediaService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to delete");
+            throw;
         }
     }
 }

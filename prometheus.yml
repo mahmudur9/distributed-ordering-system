@@ -17,3 +17,7 @@ scrape_configs:
   - job_name: "payment-service-api"
     static_configs:
       - targets: ["payment-service-api:8000"]
+      
+  - job_name: "object-store-service-api"
+    static_configs:
+      - targets: ["object-store-service-api:8000"]

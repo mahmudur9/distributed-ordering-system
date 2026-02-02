@@ -1,6 +1,9 @@
 using ObjectStoreService.API.Middlewares;
 using ObjectStoreService.Application.Extensions;
 using ObjectStoreService.Infrastructure.Extensions;
+using Prometheus;
+using Serilog;
+using Serilog.Formatting.Compact;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +40,22 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 
+// Configure serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("service", "ObjectStoreService")
+    .Enrich.WithProperty("environment", "production")
+    .Filter.ByExcluding("RequestPath = '/metrics'") // Exclude prometheus logs
+    .WriteTo.Console(new RenderedCompactJsonFormatter()) // This line is responsible for producing the docker logs
+    .WriteTo.File( // This line writes logs in files inside the container
+        new RenderedCompactJsonFormatter(),
+        "logs/objectstoreservice-.log",
+        rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -58,6 +77,9 @@ app.UseStaticFiles();
 // app.UseAuthentication();
 
 app.UseAuthorization();
+
+// Prometheus metrics
+app.MapMetrics();
 
 // app.MapGrpcService<GreeterService>();
 app.MapControllers();

@@ -94,6 +94,7 @@ services:
     container_name: object-store-service-api
     volumes:
       - ./wwwroot:/app/wwwroot
+      - ./logs:/app/logs
     ports:
       - "8005:8000"
     environment:
