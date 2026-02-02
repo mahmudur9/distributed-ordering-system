@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using UserService.Domain.ILogging;
 using UserService.Domain.IRepositories;
 using UserService.Infrastructure.BackgroundServices;
 using UserService.Infrastructure.Data;
+using UserService.Infrastructure.Logging;
 using UserService.Infrastructure.Repositories;
 
 namespace UserService.Infrastructure.Extensions;
@@ -22,6 +24,8 @@ public static class InfrastructureServiceExtensions
         // Register background services
         services.AddHostedService<BackgroundWorkerService>();
         
+        // Register logging
+        services.AddScoped(typeof(IAppLogger<>), typeof(SerilogAppLogger<>));
 
         return services;
     }

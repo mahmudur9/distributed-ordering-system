@@ -81,6 +81,8 @@ services:
       - redis
     networks:
       - ordering-system-network
+    volumes:
+      - ./logs:/app/logs
       
   object-store-service:
     build:

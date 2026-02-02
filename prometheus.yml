@@ -9,3 +9,7 @@ scrape_configs:
   - job_name: "order-service-api"
     static_configs:
       - targets: ["order-service-api:8000"]
+      
+  - job_name: "user-service-api"
+    static_configs:
+      - targets: ["user-service-api:8000"]    

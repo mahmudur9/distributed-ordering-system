@@ -29,5 +29,7 @@ RUN dotnet publish "./UserService.API.csproj" -c $BUILD_CONFIGURATION -o /app/pu
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
+USER root
+RUN mkdir -p /app/logs && chmod -R 777 /app/logs
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "UserService.API.dll"]

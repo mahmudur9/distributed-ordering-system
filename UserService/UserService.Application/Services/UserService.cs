@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.Extensions.Logging;
 using UserService.Application.IServices;
 using UserService.Application.Requests;
 using UserService.Application.Responses;
@@ -13,18 +14,21 @@ public class UserService : IUserService
     private readonly IAuthService _authService;
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService(IUnitOfWork unitOfWork, IMapper mapper, IAuthService authService)
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper, IAuthService authService, ILogger<UserService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _authService = authService;
+        _logger = logger;
     }
 
     public async Task<PaginatedResponse<UserResponse>> GetAllUsersAsync(GetAllUsersFilter filter)
     {
         try
         {
+            _logger.LogInformation("Getting all users");
             var users = await _unitOfWork.UserRepository.GetAllUsersAsync(filter.Name,
                 filter.IsActive, filter.ItemsPerPage, filter.PageNumber);
             var userCount = await _unitOfWork.UserRepository.GetAllUserCountAsync(filter.Name, filter.IsActive);
@@ -39,7 +43,8 @@ public class UserService : IUserService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to get all users");
+            throw;
         }
     }
 
@@ -52,6 +57,7 @@ public class UserService : IUserService
     {
         try
         {
+            _logger.LogInformation("Creating a new user");
             var role = await _unitOfWork.RoleRepository.GetByIdAsync(userRequest.RoleId);
             if (role is null) throw new KeyNotFoundException("Role not found");
             userRequest.Password = _authService.GenerateHash(userRequest.Password);
@@ -60,7 +66,8 @@ public class UserService : IUserService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to create user");
+            throw;
         }
     }
 
@@ -68,6 +75,7 @@ public class UserService : IUserService
     {
         try
         {
+            _logger.LogInformation($"Updating a user with id {id}");
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
             if (user is null) throw new Exception("User not found");
 
@@ -82,7 +90,8 @@ public class UserService : IUserService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to update user with id {id}");
+            throw;
         }
     }
 
@@ -90,6 +99,7 @@ public class UserService : IUserService
     {
         try
         {
+            _logger.LogInformation($"Deleting a user with id {id}");
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
             if (user is null) throw new Exception("User not found");
 
@@ -103,7 +113,8 @@ public class UserService : IUserService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to delete user with id {id}");
+            throw;
         }
     }
 
@@ -111,6 +122,7 @@ public class UserService : IUserService
     {
         try
         {
+            _logger.LogInformation($"Updating a user password with id {id}");
             if (id != _authService.GetAuthenticatedUserId()) throw new UnauthorizedAccessException("Unauthorized");
 
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
@@ -126,7 +138,8 @@ public class UserService : IUserService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to update user password with id {id}");
+            throw;
         }
     }
 
@@ -134,6 +147,7 @@ public class UserService : IUserService
     {
         try
         {
+            _logger.LogInformation($"Login a user with email {loginRequest.Email}");
             var user = await _unitOfWork.UserRepository.GetUserByEmailAsync(loginRequest.Email);
             if (user is null) throw new ArgumentException("Incorrect email or password!");
             if (!_authService.VerifyPasswordHash(loginRequest.Password, user.Password))
@@ -147,7 +161,8 @@ public class UserService : IUserService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed login with email {loginRequest.Email}");
+            throw;
         }
     }
 
@@ -156,12 +171,14 @@ public class UserService : IUserService
         try
         {
             var userId = _authService.GetAuthenticatedUserId();
+            _logger.LogInformation($"Authenticating a user with id {userId}");
             var user = await _unitOfWork.UserRepository.GetUserByIdAsync(userId);
             return _mapper.Map<UserResponse>(user);
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to authenticate a user with id {_authService.GetAuthenticatedUserId()}");
+            throw;
         }
     }
 }

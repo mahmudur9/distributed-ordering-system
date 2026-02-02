@@ -1,4 +1,7 @@
 using Microsoft.OpenApi.Models;
+using Prometheus;
+using Serilog;
+using Serilog.Formatting.Compact;
 using UserService.API.Middlewares;
 using UserService.Application.Extensions;
 using UserService.Infrastructure.Extensions;
@@ -37,6 +40,22 @@ builder.WebHost.ConfigureKestrel(options =>
 // Register extensions
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
+
+// Configure serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("service", "UserService")
+    .Enrich.WithProperty("environment", "production")
+    .Filter.ByExcluding("RequestPath = '/metrics'")
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
+    .WriteTo.File(
+        new RenderedCompactJsonFormatter(),
+        "logs/userservice-.log",
+        rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -90,6 +109,9 @@ app.UseCors("AllowAll");
 app.UseAuthorization();
 
 app.UseAuthorization();
+
+// Prometheus matrics
+app.MapMetrics();
 
 // app.MapGrpcService<GreeterService>();
 app.MapControllers();
