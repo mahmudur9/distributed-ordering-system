@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using OrderService.API.Middlewares;
 using OrderService.Application.Extensions;
 using OrderService.Infrastructure.Extensions;
+using Prometheus;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -60,7 +61,7 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(new RenderedCompactJsonFormatter())
     .WriteTo.File(
         new RenderedCompactJsonFormatter(),
-        "logs/productservice-.log",
+        "logs/orderservice-.log",
         rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
@@ -115,7 +116,12 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseCors("AllowAll");
 
+app.UseAuthentication();
+
 app.UseAuthorization();
+
+// Prometheus matrics
+app.MapMetrics();
 
 // app.MapGrpcService<GreeterService>();
 app.MapControllers();

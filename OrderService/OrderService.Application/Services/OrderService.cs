@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Linq.Expressions;
 using AutoMapper;
+using Microsoft.Extensions.Logging;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
 using OrderService.Application.Responses;
@@ -17,14 +19,16 @@ public class OrderService : IOrderService
     private readonly PaymentGrpcService.PaymentGrpcServiceClient _paymentGrpcServiceClient;
     private readonly ProductGrpcService.ProductGrpcServiceClient _productGrpcServiceClient;
     private readonly IAuthService  _authService;
+    private readonly ILogger<OrderService> _logger;
 
-    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, PaymentGrpcService.PaymentGrpcServiceClient paymentGrpcServiceClient, ProductGrpcService.ProductGrpcServiceClient productGrpcServiceClient, IAuthService authService)
+    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, PaymentGrpcService.PaymentGrpcServiceClient paymentGrpcServiceClient, ProductGrpcService.ProductGrpcServiceClient productGrpcServiceClient, IAuthService authService, ILogger<OrderService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _paymentGrpcServiceClient = paymentGrpcServiceClient;
         _productGrpcServiceClient = productGrpcServiceClient;
         _authService = authService;
+        _logger = logger;
     }
 
     private UpdateProductGrpcStockRequest MapProductStock(OrderRequest orderRequest)
@@ -36,7 +40,7 @@ public class OrderService : IOrderService
             {
                 Id = product.ProductId.ToString(),
                 Quantity = product.Quantity,
-                Price = product.ProductPrice.ToString()
+                Price = product.ProductPrice.ToString(CultureInfo.InvariantCulture)
             });
         }
         
@@ -47,6 +51,7 @@ public class OrderService : IOrderService
     {
         try
         {
+            _logger.LogInformation("Creating a new order");
             var order = _mapper.Map<Order>(orderRequest);
             decimal amount = 0;
             foreach (var product in orderRequest.Products)
@@ -70,7 +75,7 @@ public class OrderService : IOrderService
 
             var payment = new CreatePaymentGrpcRequest();
             payment.OrderId = order.Id.ToString();
-            payment.Amount = amount.ToString();
+            payment.Amount = amount.ToString(CultureInfo.InvariantCulture);
             payment.PaymentTypeId = orderRequest.PaymentTypeId.ToString();
             payment.PaymentMethodId = orderRequest.PaymentMethodId.ToString();
             var paymentResponse = await _paymentGrpcServiceClient.CreatePaymentAsync(payment);
@@ -90,7 +95,8 @@ public class OrderService : IOrderService
         catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            throw ex;
+            _logger.LogError(ex, "Failed to create order");
+            throw;
         }
     }
 
@@ -98,6 +104,7 @@ public class OrderService : IOrderService
     {
         try
         {
+            _logger.LogInformation("Getting all orders");
             List<Expression<Func<Order, bool>>> filters = [];
             filters.Add(x => x.IsActive == filter.IsActive);
             if (filter.DateFrom is not null) filters.Add(x => x.CreatedAt >= filter.DateFrom);
@@ -117,7 +124,8 @@ public class OrderService : IOrderService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, "Failed to get all orders");
+            throw;
         }
     }
 
@@ -125,8 +133,10 @@ public class OrderService : IOrderService
     {
         try
         {
+            var userId = _authService.GetAuthenticatedUserId();
+            _logger.LogInformation($"Getting all orders by userId {userId}");
             List<Expression<Func<Order, bool>>> filters = [];
-            filters.Add(x => x.IsActive == filter.IsActive &&  x.UserId == _authService.GetAuthenticatedUserId());
+            filters.Add(x => x.IsActive == filter.IsActive &&  x.UserId == userId);
             if (filter.DateFrom is not null) filters.Add(x => x.CreatedAt >= filter.DateFrom);
             if (filter.DateTo is not null) filters.Add(x => x.CreatedAt <= filter.DateTo);
 
@@ -144,7 +154,8 @@ public class OrderService : IOrderService
         }
         catch (Exception ex)
         {
-            throw ex;
+            _logger.LogError(ex, $"Failed to get all orders by userId {_authService.GetAuthenticatedUserId()}");
+            throw;
         }
     }
 }

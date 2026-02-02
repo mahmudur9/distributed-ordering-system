@@ -5,3 +5,7 @@ scrape_configs:
   - job_name: "product-service-api"
     static_configs:
       - targets: ["product-service-api:8000"]
+      
+  - job_name: "order-service-api"
+    static_configs:
+      - targets: ["order-service-api:8000"]

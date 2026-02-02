@@ -44,6 +44,8 @@ services:
       - payment-service
     networks:
       - ordering-system-network
+    volumes:
+      - ./logs:/app/logs
   
   payment-service:
     build:
