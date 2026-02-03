@@ -215,8 +215,6 @@ public class ProductService : IProductService
             _logger.LogInformation("Creating new product");
             var productCategory = await _unitOfWork.CategoryRepository.GetByIdAsync((Guid)productRequest.CategoryId!);
 
-            await _unitOfWork.BeginTransactionAsync();
-
             if (productCategory is null)
             {
                 throw new KeyNotFoundException("Category not found!");
@@ -226,6 +224,8 @@ public class ProductService : IProductService
 
             var product = MapToProduct(productRequest);
             await UploadPicturesAsync(productRequest.Pictures, product.Pictures);
+            
+            await _unitOfWork.BeginTransactionAsync();
 
             await _unitOfWork.ProductRepository.CreateAsync(product);
             await _unitOfWork.SaveChangesAsync();
@@ -297,8 +297,6 @@ public class ProductService : IProductService
             _logger.LogInformation("Deleting product");
             var product = await _unitOfWork.ProductRepository.GetByIdAsync(id);
 
-            await _unitOfWork.BeginTransactionAsync();
-
             if (product is null)
             {
                 throw new Exception($"Product with id {id} not found");
@@ -306,6 +304,8 @@ public class ProductService : IProductService
 
             product.IsActive = false;
             product.UpdatedAt = DateTime.UtcNow;
+            
+            await _unitOfWork.BeginTransactionAsync();
 
             await _unitOfWork.ProductRepository.UpdateAsync(product);
             await _unitOfWork.SaveChangesAsync();
@@ -337,8 +337,6 @@ public class ProductService : IProductService
                 throw new Exception("Some products are not available!");
             }
 
-            await _unitOfWork.BeginTransactionAsync();
-
             var productDict = new Dictionary<Guid, Tuple<int, decimal>>();
             foreach (var productStockRequest in updateProductStockRequest)
             {
@@ -355,6 +353,8 @@ public class ProductService : IProductService
 
                 product.Stock -= productDict[product.Id].Item1;
             }
+            
+            await _unitOfWork.BeginTransactionAsync();
 
             await _unitOfWork.ProductRepository.UpdateRangeAsync(products);
             await _unitOfWork.SaveChangesAsync();
@@ -376,10 +376,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            if (ex is ArgumentException)
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-            }
+            await _unitOfWork.RollbackTransactionAsync();
             _logger.LogError(ex, "Failed to update product stock");
             throw;
         }
