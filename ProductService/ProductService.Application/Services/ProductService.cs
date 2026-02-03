@@ -67,7 +67,11 @@ public class ProductService : IProductService
         try
         {
             _logger.LogInformation("Getting all products from redis");
-            string query =  "@Category:{electronics} @IsActive:{true} ";
+            string query =  $"@IsActive:{{{filter.IsActive}}} ";
+            if (filter.CategoryName is not null)
+            {
+                query += $"@CategoryName:{filter.CategoryName} ";
+            }
             if (!string.IsNullOrEmpty(filter.Name))
             {
                 query += $"(@Name:{filter.Name + "*"} | @Name:{filter.Name})";
