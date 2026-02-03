@@ -31,6 +31,6 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task RollbackTransactionAsync()
     {
-        await _context.Database.RollbackTransactionAsync();
+        await (_context.Database.CurrentTransaction?.RollbackAsync() ?? Task.CompletedTask);
     }
 }
