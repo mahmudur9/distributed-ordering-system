@@ -15,33 +15,33 @@ public class CategoriesController : ControllerBase
         _categoryService = categoryService;
     }
 
-    [HttpGet("GetAll")]
+    [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] GetAllCategoriesFilter filter)
     {
         return Ok(await _categoryService.GetAllCategoriesAsync(filter));
     }
 
-    [HttpGet("GetById/{id}")]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
         return Ok(await _categoryService.GetCategoryByIdAsync(id));
     }
 
-    [HttpPost("Create")]
+    [HttpPost]
     public async Task<IActionResult> Create(CategoryRequest categoryRequest)
     {
         await _categoryService.CreateCategoryAsync(categoryRequest);
         return Ok("Category created.");
     }
     
-    [HttpPut("Update/{id}")]
+    [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, CategoryRequest categoryRequest)
     {
         await _categoryService.UpdateCategoryAsync(id, categoryRequest);
         return Ok("Category updated.");
     }
     
-    [HttpDelete("Update/{id}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await _categoryService.DeleteCategoryAsync(id);
