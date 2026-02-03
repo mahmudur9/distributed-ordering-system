@@ -16,7 +16,7 @@ public class RolesController : ControllerBase
         _roleService = roleService;
     }
 
-    [HttpGet("GetAll")]
+    [HttpGet]
     [Produces("application/json")]
     [ProducesResponseType(typeof(PaginatedResponse<RoleResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] GetAllRolesFilter filter)

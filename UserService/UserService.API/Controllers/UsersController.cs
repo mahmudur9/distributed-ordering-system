@@ -24,7 +24,7 @@ public class UsersController : ControllerBase
         _authService = authService;
     }
 
-    [HttpGet("GetAll")]
+    [HttpGet]
     [Produces("application/json")]
     [ProducesResponseType(typeof(PaginatedResponse<UserResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] GetAllUsersFilter filter)
@@ -55,7 +55,7 @@ public class UsersController : ControllerBase
         return Ok(await _userService.AuthenticateAsync());
     }
 
-    [HttpPut("Update/{id}")]
+    [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, UpdateUserRequest updateUserRequest)
     {
         await _userService.UpdateUserAsync(id, updateUserRequest);
@@ -69,7 +69,7 @@ public class UsersController : ControllerBase
         return Ok("Password updated successfully");
     }
 
-    [HttpDelete("Delete/{id}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await _userService.DeleteUserAsync(id);
