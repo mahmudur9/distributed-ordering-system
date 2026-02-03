@@ -512,4 +512,331 @@ public class ProductServiceTests
 
         _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
     }
+    
+    [Fact]
+    public async Task DeleteProductAsync_Should_Delete_Product_And_Commit()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        var product = new Product
+        {
+            Name = "Phone",
+            Description = "Phone",
+            CategoryId = categoryId,
+            SellingPrice = 120000,
+            Stock = 5,
+            IsActive = true,
+            BuyPrice = 100000,
+            Id = id,
+            Pictures = new List<Picture>
+            {
+                new()
+                {
+                    Type = 1,
+                    Url = "dummy"
+                }
+            },
+            Category = new Category()
+            {
+                Name = "Electronics",
+                Id = categoryId
+            }
+        };
+
+        _productRepoMock
+            .Setup(x => x.GetByIdAsync(id))
+            .ReturnsAsync(product);
+
+        // Act
+        await _service.DeleteProductAsync(id);
+
+        // Assert
+        _uowMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
+        _productRepoMock.Verify(x => x.UpdateAsync(product), Times.Once);
+        _uowMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _uowMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
+        _cacheMock.Verify(x =>
+                x.DeleteJsonAsync(It.IsAny<string>()),
+            Times.Once);
+    }
+    
+    [Fact]
+    public async Task DeleteProductAsync_Should_Throw_When_Product_Not_Found()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _productRepoMock
+            .Setup(x => x.GetAsync(
+                It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Product, object>>>>()))
+            .ReturnsAsync((Product)null);
+
+        // Act
+        var ex = await Assert.ThrowsAsync<Exception>(() =>
+            _service.DeleteProductAsync(id));
+        
+        // Assert
+        Assert.Equal($"Product with id {id} not found", ex.Message);
+
+        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+    }
+    
+    [Fact]
+    public async Task DeleteProductAsync_Should_Rollback_When_Exception_Occurs()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        var product = new Product
+        {
+            Name = "Phone",
+            Description = "Phone",
+            CategoryId = categoryId,
+            SellingPrice = 120000,
+            Stock = 5,
+            IsActive = true,
+            BuyPrice = 100000,
+            Id = id,
+            Pictures = new List<Picture>
+            {
+                new()
+                {
+                    Type = 1,
+                    Url = "dummy"
+                }
+            },
+            Category = new Category()
+            {
+                Name = "Electronics",
+                Id = categoryId
+            }
+        };
+
+        _productRepoMock
+            .Setup(x => x.GetByIdAsync(id))
+            .ReturnsAsync(product);
+
+        _productRepoMock
+            .Setup(x => x.UpdateAsync(It.IsAny<Product>()))
+            .ThrowsAsync(new Exception("db fail"));
+
+        // Act
+        Func<Task> act = async () =>
+            await _service.DeleteProductAsync(id);
+
+        // Assert
+        await act.Should().ThrowAsync<Exception>();
+
+        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+    }
+    
+    [Fact]
+    public async Task VerifyAndUpdateProductStockAsync_Should_Update_Product_And_Commit()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        var productStocks = new List<UpdateProductStockRequest>()
+        {
+            new UpdateProductStockRequest()
+            {
+                Id = id,
+                Price = 120000,
+                Quantity = 2,
+            }
+        };
+
+        var products = new List<Product>()
+        {
+            new Product()
+            {
+                Id = id,
+                Name = "Phone",
+                Description = "Phone",
+                CategoryId = categoryId,
+                SellingPrice = 120000,
+                Stock = 100,
+                BuyPrice = 100000,
+                Pictures = new List<Picture>
+                {
+                    new()
+                    {
+                        Type = 1,
+                        Url = "dummy"
+                    }
+                }
+            }
+        };
+
+        _productRepoMock
+           .Setup<Task<List<Product>>>(
+               x => x.GetAllAsync(
+                   It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
+                   It.IsAny<Func<IQueryable<Product>, IOrderedQueryable<Product>>?>()
+               )
+           )
+           .ReturnsAsync(products);
+
+        // Act
+        await _service.VerifyAndUpdateProductStockAsync(productStocks);
+
+        // Assert
+        _uowMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
+        _productRepoMock.Verify(x => x.UpdateRangeAsync(products), Times.Once);
+        _uowMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _uowMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
+        _cacheMock.Verify(x =>
+                x.SetJsonAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int?>()),
+            Times.Once);
+    }
+    
+    [Fact]
+    public async Task VerifyAndUpdateProductStockAsync_Should_Throw_When_Products_Not_Available()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        var productStocks = new List<UpdateProductStockRequest>()
+        {
+            new UpdateProductStockRequest()
+            {
+                Id = id,
+                Price = 120000,
+                Quantity = 2,
+            }
+        };
+
+        _productRepoMock
+            .Setup<Task<List<Product>>>(
+                x => x.GetAllAsync(
+                    It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
+                    It.IsAny<Func<IQueryable<Product>, IOrderedQueryable<Product>>?>()
+                )
+            )
+            .ReturnsAsync([]);
+
+        // Act
+        Func<Task> act = async () =>await _service.VerifyAndUpdateProductStockAsync(productStocks);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("Some products are not available!");
+        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+    }
+    
+    [Fact]
+    public async Task VerifyAndUpdateProductStockAsync_Should_Throw_When_Price_Does_Not_Match()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        var productStocks = new List<UpdateProductStockRequest>()
+        {
+            new UpdateProductStockRequest()
+            {
+                Id = id,
+                Price = 120000,
+                Quantity = 2,
+            }
+        };
+        
+        var products = new List<Product>()
+        {
+            new Product()
+            {
+                Id = id,
+                Name = "Phone",
+                Description = "Phone",
+                CategoryId = categoryId,
+                SellingPrice = 130000,
+                Stock = 100,
+                BuyPrice = 100000,
+                Pictures = new List<Picture>
+                {
+                    new()
+                    {
+                        Type = 1,
+                        Url = "dummy"
+                    }
+                }
+            }
+        };
+
+        _productRepoMock
+            .Setup<Task<List<Product>>>(
+                x => x.GetAllAsync(
+                    It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
+                    It.IsAny<Func<IQueryable<Product>, IOrderedQueryable<Product>>?>()
+                )
+            )
+            .ReturnsAsync(products);
+
+        // Act
+        Func<Task> act = async () =>await _service.VerifyAndUpdateProductStockAsync(productStocks);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("Price of some products doesn't match!");
+        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+    }
+    
+    [Fact]
+    public async Task VerifyAndUpdateProductStockAsync_Should_Throw_When_Out_Of_Stock()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        var productStocks = new List<UpdateProductStockRequest>()
+        {
+            new UpdateProductStockRequest()
+            {
+                Id = id,
+                Price = 130000,
+                Quantity = 2,
+            }
+        };
+        
+        var products = new List<Product>()
+        {
+            new Product()
+            {
+                Id = id,
+                Name = "Phone",
+                Description = "Phone",
+                CategoryId = categoryId,
+                SellingPrice = 130000,
+                Stock = 0,
+                BuyPrice = 100000,
+                Pictures = new List<Picture>
+                {
+                    new()
+                    {
+                        Type = 1,
+                        Url = "dummy"
+                    }
+                }
+            }
+        };
+
+        _productRepoMock
+            .Setup<Task<List<Product>>>(
+                x => x.GetAllAsync(
+                    It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
+                    It.IsAny<Func<IQueryable<Product>, IOrderedQueryable<Product>>?>()
+                )
+            )
+            .ReturnsAsync(products);
+
+        // Act
+        Func<Task> act = async () =>await _service.VerifyAndUpdateProductStockAsync(productStocks);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("Some products are out of stock!");
+        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+    }
 }

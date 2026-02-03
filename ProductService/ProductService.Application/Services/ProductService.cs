@@ -338,7 +338,7 @@ public class ProductService : IProductService
 
             if (products.Count != updateProductStockRequest.Count())
             {
-                throw new Exception("Some products are not available!");
+                throw new ArgumentException("Some products are not available!");
             }
 
             var productDict = new Dictionary<Guid, Tuple<int, decimal>>();
@@ -352,7 +352,7 @@ public class ProductService : IProductService
             {
                 if (product.SellingPrice != productDict[product.Id].Item2)
                 {
-                    throw new Exception("Price of some products doesn't match!");
+                    throw new ArgumentException("Price of some products doesn't match!");
                 }
 
                 product.Stock -= productDict[product.Id].Item1;
