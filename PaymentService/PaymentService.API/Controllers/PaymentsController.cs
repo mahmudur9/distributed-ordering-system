@@ -15,19 +15,19 @@ public class PaymentsController : ControllerBase
         _paymentService = paymentService;
     }
 
-    [HttpGet("GetAll")]
+    [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] GetAllPaymentsFilter filter)
     {
         return Ok(await _paymentService.GetAllPaymentsAsync(filter));
     }
 
-    [HttpGet("GetById/{id}")]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
         return Ok(await _paymentService.GetPaymentByIdAsync(id));
     }
 
-    [HttpDelete("delete/{id}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await  _paymentService.DeletePaymentAsync(id);

@@ -15,33 +15,33 @@ public class PaymentMethodsController : ControllerBase
         _paymentMethodService = paymentMethodService;
     }
 
-    [HttpGet("GetAll")]
+    [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] GetAllPaymentMethodsFilter filter)
     {
         return Ok(await _paymentMethodService.GetAllPaymentMethodsAsync(filter));
     }
 
-    [HttpGet("GetById/{id}")]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
         return Ok(await _paymentMethodService.GetPaymentMethodByIdAsync(id));
     }
 
-    [HttpPost("Create")]
+    [HttpPost]
     public async Task<IActionResult> Create(PaymentMethodRequest paymentMethodRequest)
     {
         await _paymentMethodService.CreatePaymentMethodAsync(paymentMethodRequest);
         return Ok("Payment method created");
     }
 
-    [HttpPut("Update/{id}")]
+    [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, PaymentMethodRequest paymentMethodRequest)
     {
         await _paymentMethodService.UpdatePaymentMethodAsync(id, paymentMethodRequest);
         return Ok("Payment method updated");
     }
 
-    [HttpDelete("Delete/{id}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await _paymentMethodService.DeletePaymentMethodAsync(id);

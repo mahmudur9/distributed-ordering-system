@@ -18,14 +18,14 @@ public class OrdersController : ControllerBase
     }
 
     [Authorize(Roles = "User")]
-    [HttpPost("CreateOrder")]
+    [HttpPost]
     public async Task<IActionResult> CreateOrder(OrderRequest orderRequest)
     {
         await _orderService.CreateOrderAsync(orderRequest);
         return Ok("Order created.");
     }
 
-    [HttpGet("GetAll")]
+    [HttpGet]
     [Produces("application/json")]
     [ProducesResponseType(typeof(PaginatedResponse<OrderResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] GetAllOrdersFilter filters)
