@@ -1,4 +1,7 @@
+using System.Linq.Expressions;
+using System.Text.Json;
 using AutoMapper;
+using FluentAssertions;
 using Moq;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
@@ -141,5 +144,372 @@ public class ProductServiceTests
                 It.Is<Exception>(ex => ex.Message == "DB failure"),
                 It.Is<string>(s => s == "Failed to create product")),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllProductsFromRedisAsync_Should_Return_Paginated_Response()
+    {
+        // Arrange
+        var filter = new GetAllProductsFilter
+        {
+            IsActive = true,
+            PageNumber = 1,
+            ItemsPerPage = 10
+        };
+
+        var products = new List<ProductResponse>
+        {
+            new() { Name = "Phone", SellingPrice = 100, IsActive = true }
+        };
+
+        _cacheMock
+            .Setup(x => x.GetAllJsonAsync<ProductResponse>(
+                Constants.ProductCacheIndex,
+                "@IsActive:{True} ",
+                1, 10, "CreatedAt", "DESC"))
+            .ReturnsAsync(products);
+
+        _cacheMock
+            .Setup(x => x.GetAllCountAsync(Constants.ProductCacheIndex, "@IsActive:{True} "))
+            .ReturnsAsync(1);
+
+        // Act
+        var result = await _service.GetAllProductsFromRedisAsync(filter);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Data);
+        Assert.Equal(1, result.TotalItems);
+        Assert.Equal("Phone", result.Data.First().Name);
+
+        _cacheMock.VerifyAll();
+    }
+    
+    [Fact]
+    public async Task GetAllProductsFromRedisAsync_Should_Build_Query_With_Category_And_Name()
+    {
+        // Arrange
+        var filter = new GetAllProductsFilter
+        {
+            IsActive = true,
+            CategoryName = "Electronics",
+            Name = "Phone",
+            PageNumber = 2,
+            ItemsPerPage = 5
+        };
+
+        var expectedQuery =
+            "@IsActive:{True} " +
+            "@CategoryName:Electronics " +
+            "(@Name:Phone* | @Name:Phone)";
+
+        _cacheMock
+            .Setup(x => x.GetAllJsonAsync<ProductResponse>(
+                Constants.ProductCacheIndex,
+                expectedQuery,
+                2, 5, "CreatedAt", "DESC"))
+            .ReturnsAsync(new List<ProductResponse>());
+
+        _cacheMock
+            .Setup(x => x.GetAllCountAsync(Constants.ProductCacheIndex, expectedQuery))
+            .ReturnsAsync(0);
+
+        // Act
+        await _service.GetAllProductsFromRedisAsync(filter);
+
+        // Assert
+        _cacheMock.VerifyAll();
+    }
+    
+    [Fact]
+    public async Task GetAllProductsFromRedisAsync_Should_Return_Empty_When_No_Products()
+    {
+        var filter = new GetAllProductsFilter
+        {
+            IsActive = false,
+            PageNumber = 1,
+            ItemsPerPage = 10
+        };
+
+        _cacheMock.Setup(x =>
+                x.GetAllJsonAsync<ProductResponse>(It.IsAny<string>(), It.IsAny<string>(),
+                    1, 10, "CreatedAt", "DESC"))
+            .ReturnsAsync(new List<ProductResponse>());
+
+        _cacheMock.Setup(x =>
+                x.GetAllCountAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(0);
+
+        var result = await _service.GetAllProductsFromRedisAsync(filter);
+
+        Assert.Empty(result.Data);
+        Assert.Equal(0, result.TotalItems);
+    }
+    
+    [Fact]
+    public async Task GetProductByIdAsync_Should_Return_Product_When_Found()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        var product = new ProductResponse
+        {
+            Id = id,
+            Name = "Phone",
+            SellingPrice = 100,
+            Stock = 5,
+            IsActive = true
+        };
+
+        var json = JsonSerializer.Serialize(product);
+
+        _cacheMock
+            .Setup(x => x.GetJsonAsync(Constants.ProductCacheKeyPrefix + id))
+            .ReturnsAsync(json);
+
+        // Act
+        var result = await _service.GetProductByIdAsync(id);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(id, result.Id);
+        Assert.Equal("Phone", result.Name);
+
+        _cacheMock.Verify(x =>
+                x.GetJsonAsync(Constants.ProductCacheKeyPrefix + id),
+            Times.Once);
+    }
+    
+    [Fact]
+    public async Task GetProductByIdAsync_Should_Throw_When_Product_Not_Found()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        _cacheMock
+            .Setup(x => x.GetJsonAsync(Constants.ProductCacheKeyPrefix + id))
+            .ReturnsAsync((string?)null);
+
+        // Act + Assert
+        var ex = await Assert.ThrowsAsync<Exception>(() =>
+            _service.GetProductByIdAsync(id));
+
+        Assert.Contains("not found", ex.Message);
+    }
+    
+    [Fact]
+    public async Task GetProductByIdAsync_Should_Log_Error_And_Rethrow_When_Exception()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        _cacheMock
+            .Setup(x => x.GetJsonAsync(It.IsAny<string>()))
+            .ThrowsAsync(new Exception("Redis failure"));
+
+        // Act + Assert
+        await Assert.ThrowsAsync<Exception>(() =>
+            _service.GetProductByIdAsync(id));
+
+        _loggerMock.Verify(
+            x => x.LogError(
+                It.IsAny<Exception>(),
+                It.IsAny<string>()),
+            Times.Once);
+    }
+    
+    [Fact]
+    public async Task UpdateProductAsync_Should_Update_Product_And_Commit()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        var product = new Product
+        {
+            Name = "Phone",
+            Description = "Phone",
+            CategoryId = categoryId,
+            SellingPrice = 120000,
+            Stock = 5,
+            IsActive = true,
+            BuyPrice = 100000,
+            Id = id,
+            Pictures = new List<Picture>
+            {
+                new()
+                {
+                    Type = 1,
+                    Url = "dummy"
+                }
+            },
+            Category = new Category()
+            {
+                Name = "Electronics",
+                Id = categoryId
+            }
+        };
+
+        var request = new ProductUpdateRequest
+        {
+            Name = "Phone",
+            Description = "Phone",
+            CategoryId = categoryId,
+            SellingPrice = 120000,
+            Stock = 5,
+            BuyPrice = 100000,
+            Pictures = new List<PictureRequest>
+            {
+                new()
+                {
+                    Type = 1,
+                    Url = "dummy"
+                }
+            },
+            DeletePictureIds = new HashSet<Guid>()
+        };
+
+        _productRepoMock
+            .Setup(x => x.GetAsync(
+                It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Product, object>>>>()))
+            .ReturnsAsync(product);
+
+        _mapperMock
+            .Setup(x => x.Map<ProductResponse>(It.IsAny<Product>()))
+            .Returns(new ProductResponse());
+
+        // Act
+        await _service.UpdateProductAsync(id, request);
+
+        // Assert
+        _uowMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
+        _productRepoMock.Verify(x => x.UpdateAsync(product), Times.Once);
+        _uowMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _uowMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
+        _cacheMock.Verify(x =>
+                x.SetJsonAsync(It.IsAny<string>(), It.IsAny<ProductResponse>(), It.IsAny<int?>()),
+            Times.Once);
+    }
+    
+    [Fact]
+    public async Task UpdateProductAsync_Should_Throw_When_Product_Not_Found()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _productRepoMock
+            .Setup(x => x.GetAsync(
+                It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Product, object>>>>()))
+            .ReturnsAsync((Product)null);
+
+        // Act
+        var ex = await Assert.ThrowsAsync<Exception>(() =>
+            _service.UpdateProductAsync(id, new ProductUpdateRequest()));
+        
+        // Assert
+        Assert.Equal($"Product with id {id} not found", ex.Message);
+
+        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+    }
+    
+    [Fact]
+    public async Task UpdateProductAsync_Should_Throw_When_More_Than_Five_Pictures()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+        var product = new Product
+        {
+            Id = id,
+            Name = "Phone",
+            Description = "Phone",
+            CategoryId = categoryId,
+            SellingPrice = 120000,
+            Stock = 5,
+            BuyPrice = 100000,
+            Pictures = new List<Picture>
+            {
+                new(), new(), new(), new(), new()
+            }
+        };
+
+        var request = new ProductUpdateRequest
+        {
+            Pictures = new List<PictureRequest>
+            {
+                new()
+                {
+                    Type = 1,
+                    Url = "dummy"
+                }
+            },
+            DeletePictureIds = new HashSet<Guid>()
+        };
+
+        _productRepoMock
+            .Setup(x => x.GetAsync(
+                It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Product, object>>>>()))
+            .ReturnsAsync(product);
+
+        // Act
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.UpdateProductAsync(id, request));
+
+        // Assert
+        Assert.Equal("You are not allowed to upload more than five pictures!", ex.Message);
+    }
+    
+    [Fact]
+    public async Task UpdateProductAsync_Should_Rollback_When_Exception_Occurs()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        var product = new Product
+        {
+            Name = "Phone",
+            Description = "Phone",
+            CategoryId = categoryId,
+            SellingPrice = 120000,
+            Stock = 5,
+            IsActive = true,
+            BuyPrice = 100000,
+            Id = id,
+            Pictures = new List<Picture>
+            {
+                new()
+                {
+                    Type = 1,
+                    Url = "dummy"
+                }
+            },
+            Category = new Category()
+            {
+                Name = "Electronics",
+                Id = categoryId
+            }
+        };
+
+        _productRepoMock
+            .Setup(x => x.GetAsync(
+                It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Product, object>>>>()))
+            .ReturnsAsync(product);
+
+        _productRepoMock
+            .Setup(x => x.UpdateAsync(It.IsAny<Product>()))
+            .ThrowsAsync(new Exception("db fail"));
+
+        // Act
+        Func<Task> act = async () =>
+            await _service.UpdateProductAsync(id, new ProductUpdateRequest());
+
+        // Assert
+        await act.Should().ThrowAsync<Exception>();
+
+        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
     }
 }
