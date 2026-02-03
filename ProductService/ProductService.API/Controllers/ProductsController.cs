@@ -15,16 +15,14 @@ public class ProductsController : ControllerBase
     {
         _productService = productService;
     }
-
-    [Authorize(Roles = "User")]
+    
     [HttpGet("GetAll")]
     public async Task<IActionResult> GetAll([FromQuery] GetAllProductsFilter filter)
     {
         var products = await _productService.GetAllProductsFromRedisAsync(filter);
         return Ok(products);
     }
-
-    // [Authorize(Roles = "Admin")]
+    
     [HttpGet("GetById/{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -32,6 +30,7 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost("Create")]
     public async Task<IActionResult> Create([FromForm] ProductRequest productRequest)
     {
@@ -39,6 +38,7 @@ public class ProductsController : ControllerBase
         return Ok("Product created.");
     }
     
+    [Authorize(Roles = "Admin")]
     [HttpPut("Update/{id}")]
     public async Task<IActionResult> Update(Guid id, [FromForm] ProductUpdateRequest productRequest)
     {
@@ -46,6 +46,7 @@ public class ProductsController : ControllerBase
         return Ok("Product updated.");
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("Delete/{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
