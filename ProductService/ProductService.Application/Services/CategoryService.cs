@@ -31,7 +31,8 @@ public class CategoryService : ICategoryService
             filters.Add(x => x.IsActive == filter.IsActive);
             if (filter.Name is not null) filters.Add(x => x.Name.ToLower().Contains(filter.Name.ToLower()));
             
-            var categories = await _unitOfWork.CategoryRepository.GetAllAsync(filters, filter.ItemsPerPage, filter.PageNumber);
+            var categories = await _unitOfWork.CategoryRepository.GetAllAsync(filters, filter.ItemsPerPage, filter.PageNumber, 
+                x => x.OrderByDescending(o => o.CreatedAt));
             var productCount = await _unitOfWork.CategoryRepository.CountAsync(filters);
 
             var paginatedResponse = new PaginatedResponse<CategoryResponse>(
@@ -57,7 +58,7 @@ public class CategoryService : ICategoryService
             var category = await _unitOfWork.CategoryRepository.GetByIdAsync(id);
             if (category is null)
             {
-                throw new Exception($"Category with id {id} not found");
+                throw new KeyNotFoundException($"Category with id {id} not found");
             }
             return _mapper.Map<CategoryResponse>(category);
         }
@@ -95,7 +96,7 @@ public class CategoryService : ICategoryService
             var category = await _unitOfWork.CategoryRepository.GetByIdAsync(id);
             if (category is null)
             {
-                throw new Exception($"Category with id {id} not found");
+                throw new KeyNotFoundException($"Category with id {id} not found");
             }
             
             category =  _mapper.Map(categoryRequest, category);
@@ -118,7 +119,7 @@ public class CategoryService : ICategoryService
             var category = await _unitOfWork.CategoryRepository.GetByIdAsync(id);
             if (category is null)
             {
-                throw new Exception($"Category with id {id} not found");
+                throw new KeyNotFoundException($"Category with id {id} not found");
             }
 
             List<Expression<Func<Category, bool>>> filters = [];
@@ -128,7 +129,7 @@ public class CategoryService : ICategoryService
                 .AnyAsync(filters);
             if (hasActiveProducts)
             {
-                throw new Exception("You can not delete a category with active products!");
+                throw new ArgumentException("You can not delete a category with active products!");
             }
             category.IsActive = false;
             category.UpdatedAt = DateTime.UtcNow;

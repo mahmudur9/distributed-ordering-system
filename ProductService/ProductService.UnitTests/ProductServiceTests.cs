@@ -26,8 +26,7 @@ public class ProductServiceTests
     private readonly Mock<IMapper> _mapperMock = new();
     
     private readonly Application.Services.ProductService _service;
-   
-
+    
     public ProductServiceTests()
     {
         _unitOfWorkMock.Setup(x => x.CategoryRepository)
@@ -44,19 +43,100 @@ public class ProductServiceTests
             _loggerMock.Object
         );
     }
-
-    [Fact]
-    public async Task CreateProductAsync_Should_Create_Product()
+    
+    private Product GetProduct(Guid id, Guid  categoryId)
     {
-        var categoryId = Guid.NewGuid();
-        var request = new ProductRequest
+        return new Product()
         {
-            Name = "Test",
-            Description = "Test",
-            SellingPrice = 100,
-            BuyPrice = 80,
-            Stock = 100,
+            Name = "Phone",
+            Description = "Phone",
             CategoryId = categoryId,
+            SellingPrice = 120000,
+            Stock = 5,
+            IsActive = true,
+            BuyPrice = 100000,
+            Id = id,
+            Pictures =
+            [
+                new()
+                {
+                    Type = 1,
+                    Url = "dummy"
+                }
+            ],
+            Category = new Category()
+            {
+                Name = "Electronics",
+                Id = categoryId
+            }
+        };
+    }
+
+    private IEnumerable<Product> GetProducts(Guid id, Guid categoryId)
+    {
+        return new List<Product>()
+        {
+            new()
+            {
+                Name = "Phone",
+                Description = "Phone",
+                CategoryId = categoryId,
+                SellingPrice = 120000,
+                Stock = 5,
+                IsActive = true,
+                BuyPrice = 100000,
+                Id = id,
+                Pictures =
+                [
+                    new Picture()
+                    {
+                        Url = "dummy"
+                    }
+                ],
+                Category = new Category()
+                {
+                    Name = "Electronics",
+                    Id = categoryId
+                }
+            }
+        };
+    }
+
+    private ProductResponse GetProductResponse(Guid id, Guid categoryId)
+    {
+        return new ProductResponse()
+        {
+            Name = "Phone",
+            Description = "Phone",
+            SellingPrice = 120000,
+            Stock = 5,
+            IsActive = true,
+            Id = id,
+            Pictures =
+            [
+                new()
+                {
+                    Url = "dummy"
+                }
+            ],
+            Category = new CategoryResponse()
+            {
+                Name = "Electronics",
+                Id = categoryId
+            }
+        };
+    }
+
+    private ProductRequest GetProductRequest(Guid  categoryId)
+    {
+        return new ProductRequest()
+        {
+            Name = "Phone",
+            Description = "Phone",
+            CategoryId = categoryId,
+            SellingPrice = 120000,
+            Stock = 5,
+            BuyPrice = 100000,
             Pictures =
             [
                 new()
@@ -66,6 +146,13 @@ public class ProductServiceTests
                 }
             ]
         };
+    }
+
+    [Fact]
+    public async Task CreateProductAsync_Should_Create_Product()
+    {
+        var categoryId = Guid.NewGuid();
+        var request = GetProductRequest(categoryId);
 
         var category = new Category
         {
@@ -74,7 +161,7 @@ public class ProductServiceTests
         };
 
         _categoryRepoMock
-            .Setup(x => x.GetByIdAsync(request.CategoryId.Value))
+            .Setup(x => x.GetByIdAsync(categoryId))
             .ReturnsAsync(category);
 
         _unitOfWorkMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
@@ -109,24 +196,7 @@ public class ProductServiceTests
     {
         // Arrange
         var categoryId = Guid.NewGuid();
-
-        var request = new ProductRequest
-        {
-            Name = "Test",
-            Description = "Test",
-            SellingPrice = 100,
-            BuyPrice = 80,
-            Stock = 100,
-            CategoryId = categoryId,
-            Pictures =
-            [
-                new()
-                {
-                    Type = 1,
-                    Url = "dummy"
-                }
-            ]
-        };
+        var request = GetProductRequest(categoryId);
 
         _categoryRepoMock
             .Setup(x => x.GetByIdAsync(categoryId))
@@ -254,14 +324,7 @@ public class ProductServiceTests
         // Arrange
         var id = Guid.NewGuid();
 
-        var product = new ProductResponse
-        {
-            Id = id,
-            Name = "Phone",
-            SellingPrice = 100,
-            Stock = 5,
-            IsActive = true
-        };
+        var product = GetProductResponse(id, Guid.Empty);
 
         var json = JsonSerializer.Serialize(product);
 
@@ -327,30 +390,7 @@ public class ProductServiceTests
         var id = Guid.NewGuid();
         var categoryId = Guid.NewGuid();
 
-        var product = new Product
-        {
-            Name = "Phone",
-            Description = "Phone",
-            CategoryId = categoryId,
-            SellingPrice = 120000,
-            Stock = 5,
-            IsActive = true,
-            BuyPrice = 100000,
-            Id = id,
-            Pictures =
-            [
-                new()
-                {
-                    Type = 1,
-                    Url = "dummy"
-                }
-            ],
-            Category = new Category()
-            {
-                Name = "Electronics",
-                Id = categoryId
-            }
-        };
+        var product = GetProduct(id, categoryId);
 
         var request = new ProductUpdateRequest
         {
@@ -435,7 +475,7 @@ public class ProductServiceTests
 
         var request = new ProductUpdateRequest
         {
-            Pictures = [new(type: 1, url: "dummy")],
+            Pictures = [new PictureRequest() {Type = 1, Url = "dummy"}],
             DeletePictureIds = new HashSet<Guid>()
         };
 
@@ -460,30 +500,7 @@ public class ProductServiceTests
         var id = Guid.NewGuid();
         var categoryId = Guid.NewGuid();
 
-        var product = new Product
-        {
-            Name = "Phone",
-            Description = "Phone",
-            CategoryId = categoryId,
-            SellingPrice = 120000,
-            Stock = 5,
-            IsActive = true,
-            BuyPrice = 100000,
-            Id = id,
-            Pictures =
-            [
-                new()
-                {
-                    Type = 1,
-                    Url = "dummy"
-                }
-            ],
-            Category = new Category()
-            {
-                Name = "Electronics",
-                Id = categoryId
-            }
-        };
+        var product = GetProduct(id, categoryId);
 
         _productRepoMock
             .Setup(x => x.GetAsync(
@@ -512,30 +529,7 @@ public class ProductServiceTests
         var id = Guid.NewGuid();
         var categoryId = Guid.NewGuid();
 
-        var product = new Product
-        {
-            Name = "Phone",
-            Description = "Phone",
-            CategoryId = categoryId,
-            SellingPrice = 120000,
-            Stock = 5,
-            IsActive = true,
-            BuyPrice = 100000,
-            Id = id,
-            Pictures =
-            [
-                new()
-                {
-                    Type = 1,
-                    Url = "dummy"
-                }
-            ],
-            Category = new Category()
-            {
-                Name = "Electronics",
-                Id = categoryId
-            }
-        };
+        var product = GetProduct(id, categoryId);
 
         _productRepoMock
             .Setup(x => x.GetByIdAsync(id))
@@ -582,30 +576,7 @@ public class ProductServiceTests
         var id = Guid.NewGuid();
         var categoryId = Guid.NewGuid();
 
-        var product = new Product
-        {
-            Name = "Phone",
-            Description = "Phone",
-            CategoryId = categoryId,
-            SellingPrice = 120000,
-            Stock = 5,
-            IsActive = true,
-            BuyPrice = 100000,
-            Id = id,
-            Pictures =
-            [
-                new()
-                {
-                    Type = 1,
-                    Url = "dummy"
-                }
-            ],
-            Category = new Category()
-            {
-                Name = "Electronics",
-                Id = categoryId
-            }
-        };
+        var product = GetProduct(id, categoryId);
 
         _productRepoMock
             .Setup(x => x.GetByIdAsync(id))
@@ -642,27 +613,7 @@ public class ProductServiceTests
             }
         };
 
-        var products = new List<Product>()
-        {
-            new Product()
-            {
-                Id = id,
-                Name = "Phone",
-                Description = "Phone",
-                CategoryId = categoryId,
-                SellingPrice = 120000,
-                Stock = 100,
-                BuyPrice = 100000,
-                Pictures =
-                [
-                    new()
-                    {
-                        Type = 1,
-                        Url = "dummy"
-                    }
-                ]
-            }
-        };
+        var products = GetProducts(id, categoryId);
 
         _productRepoMock
            .Setup<Task<List<Product>>>(
@@ -671,7 +622,7 @@ public class ProductServiceTests
                    It.IsAny<Func<IQueryable<Product>, IOrderedQueryable<Product>>?>()
                )
            )
-           .ReturnsAsync(products);
+           .ReturnsAsync((List<Product>)products);
 
         // Act
         await _service.VerifyAndUpdateProductStockAsync(productStocks);
@@ -794,7 +745,7 @@ public class ProductServiceTests
         
         var products = new List<Product>()
         {
-            new Product()
+            new()
             {
                 Id = id,
                 Name = "Phone",
