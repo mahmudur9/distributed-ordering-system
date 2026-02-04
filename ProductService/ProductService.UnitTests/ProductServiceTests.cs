@@ -16,26 +16,28 @@ namespace ProductService.UnitTests;
 public class ProductServiceTests
 {
     private readonly Mock<ICache> _cacheMock = new();
+    
     private readonly Mock<ICategoryRepository> _categoryRepoMock = new();
+    private readonly Mock<IProductRepository> _productRepoMock = new();
+    private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
+    
     private readonly Mock<IHttpClientFactory> _httpFactoryMock = new();
     private readonly Mock<IAppLogger<Application.Services.ProductService>> _loggerMock = new();
-
     private readonly Mock<IMapper> _mapperMock = new();
-    private readonly Mock<IProductRepository> _productRepoMock = new();
-
+    
     private readonly Application.Services.ProductService _service;
-    private readonly Mock<IUnitOfWork> _uowMock = new();
+   
 
     public ProductServiceTests()
     {
-        _uowMock.Setup(x => x.CategoryRepository)
+        _unitOfWorkMock.Setup(x => x.CategoryRepository)
             .Returns(_categoryRepoMock.Object);
 
-        _uowMock.Setup(x => x.ProductRepository)
+        _unitOfWorkMock.Setup(x => x.ProductRepository)
             .Returns(_productRepoMock.Object);
 
         _service = new Application.Services.ProductService(
-            _uowMock.Object,
+            _unitOfWorkMock.Object,
             _mapperMock.Object,
             _httpFactoryMock.Object,
             _cacheMock.Object,
@@ -55,14 +57,14 @@ public class ProductServiceTests
             BuyPrice = 80,
             Stock = 100,
             CategoryId = categoryId,
-            Pictures = new List<PictureRequest>
-            {
+            Pictures =
+            [
                 new()
                 {
                     Type = 1,
                     Url = "dummy"
                 }
-            }
+            ]
         };
 
         var category = new Category
@@ -75,9 +77,9 @@ public class ProductServiceTests
             .Setup(x => x.GetByIdAsync(request.CategoryId.Value))
             .ReturnsAsync(category);
 
-        _uowMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
-        _uowMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
-        _uowMock.Setup(x => x.CommitTransactionAsync()).Returns(Task.CompletedTask);
+        _unitOfWorkMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
+        _unitOfWorkMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
+        _unitOfWorkMock.Setup(x => x.CommitTransactionAsync()).Returns(Task.CompletedTask);
         
         var productResponse = new ProductResponse();
         _mapperMock
@@ -88,18 +90,18 @@ public class ProductServiceTests
         await _service.CreateProductAsync(request);
 
         // Assert
-        _uowMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
 
         _productRepoMock.Verify(x => x.CreateAsync(It.IsAny<Product>()), Times.Once);
 
-        _uowMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
         
         _cacheMock.Verify(x => x.SetJsonAsync(Constants.ProductCacheKeyPrefix + productResponse.Id, 
             productResponse, It.IsAny<int?>()));
 
-        _uowMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
 
-        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Never);
+        _unitOfWorkMock.Verify(x => x.RollbackTransactionAsync(), Times.Never);
     }
 
     [Fact]
@@ -116,14 +118,14 @@ public class ProductServiceTests
             BuyPrice = 80,
             Stock = 100,
             CategoryId = categoryId,
-            Pictures = new List<PictureRequest>
-            {
+            Pictures =
+            [
                 new()
                 {
                     Type = 1,
                     Url = "dummy"
                 }
-            }
+            ]
         };
 
         _categoryRepoMock
@@ -138,7 +140,7 @@ public class ProductServiceTests
         await Assert.ThrowsAsync<Exception>(() =>
             _service.CreateProductAsync(request));
 
-        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
 
         _loggerMock.Verify(x => x.LogError(
                 It.Is<Exception>(ex => ex.Message == "DB failure"),
@@ -335,14 +337,14 @@ public class ProductServiceTests
             IsActive = true,
             BuyPrice = 100000,
             Id = id,
-            Pictures = new List<Picture>
-            {
+            Pictures =
+            [
                 new()
                 {
                     Type = 1,
                     Url = "dummy"
                 }
-            },
+            ],
             Category = new Category()
             {
                 Name = "Electronics",
@@ -358,14 +360,14 @@ public class ProductServiceTests
             SellingPrice = 120000,
             Stock = 5,
             BuyPrice = 100000,
-            Pictures = new List<PictureRequest>
-            {
+            Pictures =
+            [
                 new()
                 {
                     Type = 1,
                     Url = "dummy"
                 }
-            },
+            ],
             DeletePictureIds = new HashSet<Guid>()
         };
 
@@ -383,10 +385,10 @@ public class ProductServiceTests
         await _service.UpdateProductAsync(id, request);
 
         // Assert
-        _uowMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
         _productRepoMock.Verify(x => x.UpdateAsync(product), Times.Once);
-        _uowMock.Verify(x => x.SaveChangesAsync(), Times.Once);
-        _uowMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
         _cacheMock.Verify(x =>
                 x.SetJsonAsync(It.IsAny<string>(), It.IsAny<ProductResponse>(), It.IsAny<int?>()),
             Times.Once);
@@ -401,7 +403,7 @@ public class ProductServiceTests
             .Setup(x => x.GetAsync(
                 It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
                 It.IsAny<IEnumerable<Expression<Func<Product, object>>>>()))
-            .ReturnsAsync((Product)null);
+            .ReturnsAsync(It.IsAny<Product>());
 
         // Act
         var ex = await Assert.ThrowsAsync<Exception>(() =>
@@ -410,7 +412,7 @@ public class ProductServiceTests
         // Assert
         Assert.Equal($"Product with id {id} not found", ex.Message);
 
-        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
     }
     
     [Fact]
@@ -428,22 +430,12 @@ public class ProductServiceTests
             SellingPrice = 120000,
             Stock = 5,
             BuyPrice = 100000,
-            Pictures = new List<Picture>
-            {
-                new(), new(), new(), new(), new()
-            }
+            Pictures = [new(), new(), new(), new(), new()]
         };
 
         var request = new ProductUpdateRequest
         {
-            Pictures = new List<PictureRequest>
-            {
-                new()
-                {
-                    Type = 1,
-                    Url = "dummy"
-                }
-            },
+            Pictures = [new(type: 1, url: "dummy")],
             DeletePictureIds = new HashSet<Guid>()
         };
 
@@ -478,14 +470,14 @@ public class ProductServiceTests
             IsActive = true,
             BuyPrice = 100000,
             Id = id,
-            Pictures = new List<Picture>
-            {
+            Pictures =
+            [
                 new()
                 {
                     Type = 1,
                     Url = "dummy"
                 }
-            },
+            ],
             Category = new Category()
             {
                 Name = "Electronics",
@@ -510,7 +502,7 @@ public class ProductServiceTests
         // Assert
         await act.Should().ThrowAsync<Exception>();
 
-        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
     }
     
     [Fact]
@@ -530,14 +522,14 @@ public class ProductServiceTests
             IsActive = true,
             BuyPrice = 100000,
             Id = id,
-            Pictures = new List<Picture>
-            {
+            Pictures =
+            [
                 new()
                 {
                     Type = 1,
                     Url = "dummy"
                 }
-            },
+            ],
             Category = new Category()
             {
                 Name = "Electronics",
@@ -553,10 +545,10 @@ public class ProductServiceTests
         await _service.DeleteProductAsync(id);
 
         // Assert
-        _uowMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
         _productRepoMock.Verify(x => x.UpdateAsync(product), Times.Once);
-        _uowMock.Verify(x => x.SaveChangesAsync(), Times.Once);
-        _uowMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
         _cacheMock.Verify(x =>
                 x.DeleteJsonAsync(It.IsAny<string>()),
             Times.Once);
@@ -571,7 +563,7 @@ public class ProductServiceTests
             .Setup(x => x.GetAsync(
                 It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
                 It.IsAny<IEnumerable<Expression<Func<Product, object>>>>()))
-            .ReturnsAsync((Product)null);
+            .ReturnsAsync(It.IsAny<Product>());
 
         // Act
         var ex = await Assert.ThrowsAsync<Exception>(() =>
@@ -580,7 +572,7 @@ public class ProductServiceTests
         // Assert
         Assert.Equal($"Product with id {id} not found", ex.Message);
 
-        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
     }
     
     [Fact]
@@ -600,14 +592,14 @@ public class ProductServiceTests
             IsActive = true,
             BuyPrice = 100000,
             Id = id,
-            Pictures = new List<Picture>
-            {
+            Pictures =
+            [
                 new()
                 {
                     Type = 1,
                     Url = "dummy"
                 }
-            },
+            ],
             Category = new Category()
             {
                 Name = "Electronics",
@@ -630,7 +622,7 @@ public class ProductServiceTests
         // Assert
         await act.Should().ThrowAsync<Exception>();
 
-        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
     }
     
     [Fact]
@@ -661,14 +653,14 @@ public class ProductServiceTests
                 SellingPrice = 120000,
                 Stock = 100,
                 BuyPrice = 100000,
-                Pictures = new List<Picture>
-                {
+                Pictures =
+                [
                     new()
                     {
                         Type = 1,
                         Url = "dummy"
                     }
-                }
+                ]
             }
         };
 
@@ -685,10 +677,10 @@ public class ProductServiceTests
         await _service.VerifyAndUpdateProductStockAsync(productStocks);
 
         // Assert
-        _uowMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
         _productRepoMock.Verify(x => x.UpdateRangeAsync(products), Times.Once);
-        _uowMock.Verify(x => x.SaveChangesAsync(), Times.Once);
-        _uowMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
         _cacheMock.Verify(x =>
                 x.SetJsonAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int?>()),
             Times.Once);
@@ -699,7 +691,6 @@ public class ProductServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        var categoryId = Guid.NewGuid();
 
         var productStocks = new List<UpdateProductStockRequest>()
         {
@@ -725,7 +716,7 @@ public class ProductServiceTests
 
         // Assert
         await act.Should().ThrowAsync<ArgumentException>().WithMessage("Some products are not available!");
-        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
     }
     
     [Fact]
@@ -756,14 +747,14 @@ public class ProductServiceTests
                 SellingPrice = 130000,
                 Stock = 100,
                 BuyPrice = 100000,
-                Pictures = new List<Picture>
-                {
+                Pictures =
+                [
                     new()
                     {
                         Type = 1,
                         Url = "dummy"
                     }
-                }
+                ]
             }
         };
 
@@ -781,7 +772,7 @@ public class ProductServiceTests
 
         // Assert
         await act.Should().ThrowAsync<ArgumentException>().WithMessage("Price of some products doesn't match!");
-        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
     }
     
     [Fact]
@@ -812,14 +803,14 @@ public class ProductServiceTests
                 SellingPrice = 130000,
                 Stock = 0,
                 BuyPrice = 100000,
-                Pictures = new List<Picture>
-                {
+                Pictures =
+                [
                     new()
                     {
                         Type = 1,
                         Url = "dummy"
                     }
-                }
+                ]
             }
         };
 
@@ -837,6 +828,6 @@ public class ProductServiceTests
 
         // Assert
         await act.Should().ThrowAsync<ArgumentException>().WithMessage("Some products are out of stock!");
-        _uowMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
     }
 }
