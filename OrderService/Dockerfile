@@ -16,14 +16,23 @@ COPY ["OrderService.API/OrderService.API.csproj", "OrderService.API/"]
 COPY ["OrderService.Application/OrderService.Application.csproj", "OrderService.Application/"]
 COPY ["OrderService.Domain/OrderService.Domain.csproj", "OrderService.Domain/"]
 COPY ["OrderService.Infrastructure/OrderService.Infrastructure.csproj", "OrderService.Infrastructure/"]
+COPY ["OrderService.UnitTests/OrderService.UnitTests.csproj", "OrderService.UnitTests/"]
 RUN dotnet restore "./OrderService.API/OrderService.API.csproj"
 COPY . .
 WORKDIR "/src/OrderService.API"
 RUN dotnet build "./OrderService.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
+FROM build AS test
+
+WORKDIR /src/OrderService.UnitTests
+
+# If tests fail → docker build fails automatically
+RUN dotnet test "OrderService.UnitTests.csproj" -c $BUILD_CONFIGURATION --verbosity normal
+
 # This stage is used to publish the service project to be copied to the final stage
-FROM build AS publish
+FROM test AS publish
 ARG BUILD_CONFIGURATION=Release
+WORKDIR /src/OrderService.API
 RUN dotnet publish "./OrderService.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
