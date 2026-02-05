@@ -1,16 +1,14 @@
 using System.Linq.Expressions;
 using AutoMapper;
 using FluentAssertions;
-using Grpc.Core;
 using Moq;
+using OrderService.Application.Abstractions.Gateways;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
 using OrderService.Application.Responses;
 using OrderService.Domain.ILogging;
 using OrderService.Domain.IRepositories;
 using OrderService.Domain.Models;
-using PaymentService.API;
-using ProductService.API;
 
 namespace OrderService.UnitTests;
 
@@ -20,10 +18,10 @@ public class OrderServiceTests
     private readonly Mock<IAppLogger<Application.Services.OrderService>> _loggerMock = new();
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<IOrderRepository> _orderRepositoryMock = new();
-    private readonly Application.Services.OrderService _orderService;
-    private readonly Mock<PaymentGrpcService.PaymentGrpcServiceClient> _paymentGrpcServiceClientMock = new();
-    private readonly Mock<ProductGrpcService.ProductGrpcServiceClient> _productGrpcServiceClientMock = new();
+    private readonly Mock<IPaymentGateway> _paymentGatewayMock = new();
+    private readonly Mock<IProductGateway> _productGatewayMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
+    private readonly Application.Services.OrderService _orderService;
 
     public OrderServiceTests()
     {
@@ -31,10 +29,10 @@ public class OrderServiceTests
         _orderService = new Application.Services.OrderService(
             _unitOfWorkMock.Object,
             _mapperMock.Object,
-            _paymentGrpcServiceClientMock.Object,
-            _productGrpcServiceClientMock.Object,
             _authServiceMock.Object,
-            _loggerMock.Object
+            _loggerMock.Object,
+            _productGatewayMock.Object,
+            _paymentGatewayMock.Object
         );
     }
 
@@ -147,6 +145,7 @@ public class OrderServiceTests
             [
                 new ProductOrder
                 {
+                    ProductName = "Test",
                     ProductId = Guid.Empty,
                     ProductPrice = 120000,
                     Quantity = 2
@@ -170,49 +169,20 @@ public class OrderServiceTests
 
         _mapperMock.Setup(m => m.Map<Order>(It.IsAny<OrderRequest>())).Returns(order);
         _authServiceMock.Setup(x => x.GetAuthenticatedUserId()).Returns(Guid.NewGuid());
-
-        var grpcResponse = new GrpcResponse
+        
+        var gatewayResponse = new GatewayResponse
         {
-            Success = true
+            Success = true,
+            Error = ""
         };
-        var productStockRequest = new UpdateProductGrpcStockRequest();
-        productStockRequest.Products.Add(new ProductStockGrpcRequest
-        {
-            Id = Guid.Empty.ToString(),
-            Quantity = 2,
-            Price = "120000"
-        });
-        var asyncGrpcResponse = new AsyncUnaryCall<GrpcResponse>(
-            Task.FromResult(grpcResponse),
-            Task.FromResult(new Metadata()),
-            () => Status.DefaultSuccess,
-            () => new Metadata(),
-            () => { }
-        );
-        _productGrpcServiceClientMock.Setup<AsyncUnaryCall<GrpcResponse>>(x => x.VerifyAndUpdateProductStockAsync(
-            productStockRequest,
-            It.IsAny<Metadata>(),
-            null,
-            It.IsAny<CancellationToken>()
-        )).Returns(asyncGrpcResponse);
-
-        var paymentGrpcResponse = new CreatePaymentGrpcResponse
-        {
-            Success = true
-        };
-        var asyncPaymentGrpcResponse = new AsyncUnaryCall<CreatePaymentGrpcResponse>(
-            Task.FromResult(paymentGrpcResponse),
-            Task.FromResult(new Metadata()),
-            () => Status.DefaultSuccess,
-            () => new Metadata(),
-            () => { }
-        );
-        _paymentGrpcServiceClientMock.Setup<AsyncUnaryCall<CreatePaymentGrpcResponse>>(x => x.CreatePaymentAsync(
-            It.IsAny<CreatePaymentGrpcRequest>(),
-            It.IsAny<Metadata>(),
-            null,
-            It.IsAny<CancellationToken>()
-        )).Returns(asyncPaymentGrpcResponse);
+        
+        _productGatewayMock.Setup<Task<GatewayResponse>>(x => x.VerifyAndUpdateProductStockAsync(
+                    It.IsAny<List<ProductStockGatewayRequest>>()
+                )).ReturnsAsync(gatewayResponse);
+        
+        _paymentGatewayMock.Setup<Task<GatewayResponse>>(x => x.CreatePaymentAsync(
+            It.IsAny<CreatePaymentGatewayRequest>()
+        )).ReturnsAsync(gatewayResponse);
 
         _unitOfWorkMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
         _unitOfWorkMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
@@ -264,18 +234,8 @@ public class OrderServiceTests
         _mapperMock.Setup(m => m.Map<Order>(It.IsAny<OrderRequest>())).Returns(order);
         _authServiceMock.Setup(x => x.GetAuthenticatedUserId()).Returns(Guid.NewGuid());
         
-        var productStockRequest = new UpdateProductGrpcStockRequest();
-        productStockRequest.Products.Add(new ProductStockGrpcRequest
-        {
-            Id = Guid.Empty.ToString(),
-            Quantity = 2,
-            Price = "120000"
-        });
-        _productGrpcServiceClientMock.Setup<AsyncUnaryCall<GrpcResponse>>(x => x.VerifyAndUpdateProductStockAsync(
-            productStockRequest,
-            It.IsAny<Metadata>(),
-            null,
-            It.IsAny<CancellationToken>()
+        _productGatewayMock.Setup<Task<GatewayResponse>>(x => x.VerifyAndUpdateProductStockAsync(
+            It.IsAny<List<ProductStockGatewayRequest>>()
         )).Throws(new  Exception("error"));
 
         _unitOfWorkMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
@@ -328,43 +288,23 @@ public class OrderServiceTests
 
         _mapperMock.Setup(m => m.Map<Order>(It.IsAny<OrderRequest>())).Returns(order);
         _authServiceMock.Setup(x => x.GetAuthenticatedUserId()).Returns(Guid.NewGuid());
-
-        var grpcResponse = new GrpcResponse
+        
+        var gatewayResponse = new GatewayResponse
         {
-            Success = false,
-            Error = "error"
+            Success = true,
+            Error = ""
         };
-        var productStockRequest = new UpdateProductGrpcStockRequest();
-        productStockRequest.Products.Add(new ProductStockGrpcRequest
-        {
-            Id = Guid.Empty.ToString(),
-            Quantity = 2,
-            Price = "120000"
-        });
-        var asyncGrpcResponse = new AsyncUnaryCall<GrpcResponse>(
-            Task.FromResult(grpcResponse),
-            Task.FromResult(new Metadata()),
-            () => Status.DefaultSuccess,
-            () => new Metadata(),
-            () => { }
-        );
-        _productGrpcServiceClientMock.Setup<AsyncUnaryCall<GrpcResponse>>(x => x.VerifyAndUpdateProductStockAsync(
-            productStockRequest,
-            It.IsAny<Metadata>(),
-            null,
-            It.IsAny<CancellationToken>()
-        )).Returns(asyncGrpcResponse);
+        
+        _productGatewayMock.Setup<Task<GatewayResponse>>(x => x.VerifyAndUpdateProductStockAsync(
+            It.IsAny<List<ProductStockGatewayRequest>>()
+        )).ReturnsAsync(gatewayResponse);
        
-        _paymentGrpcServiceClientMock.Setup<AsyncUnaryCall<CreatePaymentGrpcResponse>>(x => x.CreatePaymentAsync(
-            It.IsAny<CreatePaymentGrpcRequest>(),
-            It.IsAny<Metadata>(),
-            null,
-            It.IsAny<CancellationToken>()
-        )).Throws(new  Exception("error"));
+        _paymentGatewayMock.Setup(x => x.CreatePaymentAsync(
+            It.IsAny<CreatePaymentGatewayRequest>()
+        )).ThrowsAsync(new  Exception("error"));
 
         _unitOfWorkMock.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
         _unitOfWorkMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
-        _unitOfWorkMock.Setup(x => x.CommitTransactionAsync()).Returns(Task.CompletedTask);
 
         // Act
         Func<Task> act = async () => await _orderService.CreateOrderAsync(orderRequest);

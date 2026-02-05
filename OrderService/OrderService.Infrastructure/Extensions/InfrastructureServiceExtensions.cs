@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OrderService.Application.Abstractions.Gateways;
 using OrderService.Domain.ILogging;
 using OrderService.Domain.IRepositories;
 using OrderService.Infrastructure.BackgroundServices;
 using OrderService.Infrastructure.Data;
+using OrderService.Infrastructure.GrpcClients;
 using OrderService.Infrastructure.Logging;
 using OrderService.Infrastructure.Repositories;
 using PaymentService.API;
@@ -33,6 +35,9 @@ public static class InfrastructureServiceExtensions
         {
             o.Address = new Uri(configuration.GetRequiredSection("Services").GetValue<string>("PaymentService")!);
         });
+
+        services.AddScoped<IProductGateway, ProductGrpcClient>();
+        services.AddScoped<IPaymentGateway, PaymentGrpcClient>();
 
         // Register background services
         services.AddHostedService<BackgroundWorkerService>();

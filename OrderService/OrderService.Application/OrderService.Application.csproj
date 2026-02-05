@@ -7,12 +7,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\OrderService.Domain\OrderService.Domain.csproj" />
-      <ProjectReference Include="..\OrderService.Infrastructure\OrderService.Infrastructure.csproj" />
+        <ProjectReference Include="..\OrderService.Domain\OrderService.Domain.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="AutoMapper" Version="13.0.1" />
+        <PackageReference Include="AutoMapper" Version="13.0.1"/>
+        <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6"/>
     </ItemGroup>
 
 </Project>

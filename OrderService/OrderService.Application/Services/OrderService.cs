@@ -1,14 +1,12 @@
-using System.Globalization;
 using System.Linq.Expressions;
 using AutoMapper;
+using OrderService.Application.Abstractions.Gateways;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
 using OrderService.Application.Responses;
 using OrderService.Domain.ILogging;
 using OrderService.Domain.IRepositories;
 using OrderService.Domain.Models;
-using PaymentService.API;
-using ProductService.API;
 
 namespace OrderService.Application.Services;
 
@@ -16,36 +14,35 @@ public class OrderService : IOrderService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    private readonly PaymentGrpcService.PaymentGrpcServiceClient _paymentGrpcServiceClient;
-    private readonly ProductGrpcService.ProductGrpcServiceClient _productGrpcServiceClient;
+    private readonly IProductGateway _productGateway;
+    private readonly IPaymentGateway _paymentGateway;
     private readonly IAuthService  _authService;
     private readonly IAppLogger<OrderService> _logger;
 
-    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, PaymentGrpcService.PaymentGrpcServiceClient paymentGrpcServiceClient, 
-        ProductGrpcService.ProductGrpcServiceClient productGrpcServiceClient, IAuthService authService, IAppLogger<OrderService> logger)
+    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, IAuthService authService, IAppLogger<OrderService> logger, IProductGateway productGateway, IPaymentGateway paymentGateway)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
-        _paymentGrpcServiceClient = paymentGrpcServiceClient;
-        _productGrpcServiceClient = productGrpcServiceClient;
         _authService = authService;
         _logger = logger;
+        _productGateway = productGateway;
+        _paymentGateway = paymentGateway;
     }
 
-    private UpdateProductGrpcStockRequest MapProductStock(OrderRequest orderRequest)
+    private List<ProductStockGatewayRequest> MapProductStock(OrderRequest orderRequest)
     {
-        var productStock = new UpdateProductGrpcStockRequest();
+        var productStocks = new List<ProductStockGatewayRequest>();
         foreach (var product in orderRequest.Products)
         {
-            productStock.Products.Add(new ProductStockGrpcRequest()
+            productStocks.Add(new ProductStockGatewayRequest()
             {
-                Id = product.ProductId.ToString(),
+                Id = product.ProductId,
                 Quantity = product.Quantity,
-                Price = product.ProductPrice.ToString(CultureInfo.InvariantCulture)
+                Price = product.ProductPrice
             });
         }
         
-        return productStock;
+        return productStocks;
     }
 
     public async Task CreateOrderAsync(OrderRequest orderRequest)
@@ -67,27 +64,29 @@ public class OrderService : IOrderService
             await _unitOfWork.OrderRepository.CreateAsync(order);
             await _unitOfWork.SaveChangesAsync();
 
-            var productStock = MapProductStock(orderRequest);
-            var productStockResponse = await _productGrpcServiceClient.VerifyAndUpdateProductStockAsync(productStock);
+            var productStocks = MapProductStock(orderRequest);
+            var productStockResponse = await _productGateway.VerifyAndUpdateProductStockAsync(productStocks);
             if (!productStockResponse.Success)
             {
                 throw new ArgumentException(productStockResponse.Error);
             }
 
-            var payment = new CreatePaymentGrpcRequest();
-            payment.OrderId = order.Id.ToString();
-            payment.Amount = amount.ToString(CultureInfo.InvariantCulture);
-            payment.PaymentTypeId = orderRequest.PaymentTypeId.ToString();
-            payment.PaymentMethodId = orderRequest.PaymentMethodId.ToString();
-            var paymentResponse = await _paymentGrpcServiceClient.CreatePaymentAsync(payment);
+            var payment = new CreatePaymentGatewayRequest
+            {
+                OrderId = order.Id,
+                Amount = amount,
+                PaymentTypeId = orderRequest.PaymentTypeId,
+                PaymentMethodId = orderRequest.PaymentMethodId ?? Guid.Empty
+            };
+            var paymentResponse = await _paymentGateway.CreatePaymentAsync(payment);
             if (!paymentResponse.Success)
             {
                 // Rollback product stock
-                foreach (var product in productStock.Products)
+                foreach (var product in productStocks)
                 {
                     product.Quantity = -product.Quantity;
                 }
-                await _productGrpcServiceClient.VerifyAndUpdateProductStockAsync(productStock);
+                await _productGateway.VerifyAndUpdateProductStockAsync(productStocks);
                 throw new Exception(paymentResponse.Error);
             }
             
