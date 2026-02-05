@@ -1,5 +1,5 @@
+using ObjectStoreService.Domain.ILogging;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using ObjectStoreService.Application.IServices;
 using ObjectStoreService.Application.Requests;
 using ObjectStoreService.Application.Responses;
@@ -10,35 +10,13 @@ namespace ObjectStoreService.Application.Services;
 
 public class MediaService : IMediaService
 {
-    private readonly ILogger<MediaService> _logger;
+    private readonly IImageProcessorService _imageProcessorService;
+    private readonly IAppLogger<MediaService> _logger;
 
-    public MediaService(ILogger<MediaService> logger)
+    public MediaService(IAppLogger<MediaService> logger, IImageProcessorService imageProcessorService)
     {
         _logger = logger;
-    }
-
-    private async Task ImageResizeAndSaveAsync(string path, IFormFile file)
-    {
-        await using var stream = file.OpenReadStream();
-
-        using var image = await Image.LoadAsync(stream);
-
-        int maxWidth = 600;
-        int maxHeight = 600;
-
-        int originalWidth = image.Width;
-        int originalHeight = image.Height;
-
-        double ratioX = (double)maxWidth / originalWidth;
-        double ratioY = (double)maxHeight / originalHeight;
-        double ratio = Math.Min(ratioX, ratioY);
-
-        int newWidth = (int)(originalWidth * ratio);
-        int newHeight = (int)(originalHeight * ratio);
-
-        image.Mutate(x => x.Resize(newWidth, newHeight));
-
-        await image.SaveAsync(path);
+        _imageProcessorService = imageProcessorService;
     }
 
     public async Task<MediaResponse> UploadAsync(MediaRequest mediaRequest)
@@ -54,7 +32,7 @@ public class MediaService : IMediaService
             string wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
             Directory.CreateDirectory(wwwrootPath);
 
-            await ImageResizeAndSaveAsync(path, file);
+            await _imageProcessorService.ImageResizeAndSaveAsync(path, file);
 
             // string host = _httpContextAccessor.HttpContext!.Request.Host.Host;
             var response = new MediaResponse()

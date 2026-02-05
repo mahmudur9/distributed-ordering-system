@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaymentService.Application"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaymentService.Domain", "PaymentService.Domain\PaymentService.Domain.csproj", "{DFF91BF7-BC34-41F7-BAF8-36213AFA450D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaymentService.UnitTests", "PaymentService.UnitTests\PaymentService.UnitTests.csproj", "{DE3363A4-4AA0-4588-A28C-FEA565D879A3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{DFF91BF7-BC34-41F7-BAF8-36213AFA450D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DFF91BF7-BC34-41F7-BAF8-36213AFA450D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DFF91BF7-BC34-41F7-BAF8-36213AFA450D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE3363A4-4AA0-4588-A28C-FEA565D879A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE3363A4-4AA0-4588-A28C-FEA565D879A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE3363A4-4AA0-4588-A28C-FEA565D879A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE3363A4-4AA0-4588-A28C-FEA565D879A3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

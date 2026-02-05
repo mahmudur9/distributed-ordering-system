@@ -15,6 +15,7 @@ public static class ApplicationServiceExtensions
         
         // Register services
         services.AddScoped<IMediaService, MediaService>();
+        services.AddScoped<IImageProcessorService, ImageProcessorService>();
         
         // Register http context accessor
         services.AddHttpContextAccessor();
