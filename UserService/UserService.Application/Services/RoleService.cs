@@ -1,8 +1,8 @@
 using AutoMapper;
-using Microsoft.Extensions.Logging;
 using UserService.Application.IServices;
 using UserService.Application.Requests;
 using UserService.Application.Responses;
+using UserService.Domain.ILogging;
 using UserService.Domain.IRepositories;
 
 namespace UserService.Application.Services;
@@ -11,9 +11,9 @@ public class RoleService : IRoleService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    private readonly ILogger<RoleService> _logger;
+    private readonly IAppLogger<RoleService> _logger;
 
-    public RoleService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<RoleService> logger)
+    public RoleService(IUnitOfWork unitOfWork, IMapper mapper, IAppLogger<RoleService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;

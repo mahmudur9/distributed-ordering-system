@@ -1,8 +1,8 @@
 using AutoMapper;
-using Microsoft.Extensions.Logging;
 using UserService.Application.IServices;
 using UserService.Application.Requests;
 using UserService.Application.Responses;
+using UserService.Domain.ILogging;
 using UserService.Domain.IRepositories;
 using UserService.Domain.Models;
 using UserService.Infrastructure.Constants;
@@ -14,9 +14,9 @@ public class UserService : IUserService
     private readonly IAuthService _authService;
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<UserService> _logger;
+    private readonly IAppLogger<UserService> _logger;
 
-    public UserService(IUnitOfWork unitOfWork, IMapper mapper, IAuthService authService, ILogger<UserService> logger)
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper, IAuthService authService, IAppLogger<UserService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;

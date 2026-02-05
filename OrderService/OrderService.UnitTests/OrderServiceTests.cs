@@ -2,11 +2,11 @@ using System.Linq.Expressions;
 using AutoMapper;
 using FluentAssertions;
 using Grpc.Core;
-using Microsoft.Extensions.Logging;
 using Moq;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
 using OrderService.Application.Responses;
+using OrderService.Domain.ILogging;
 using OrderService.Domain.IRepositories;
 using OrderService.Domain.Models;
 using PaymentService.API;
@@ -17,7 +17,7 @@ namespace OrderService.UnitTests;
 public class OrderServiceTests
 {
     private readonly Mock<IAuthService> _authServiceMock = new();
-    private readonly Mock<ILogger<Application.Services.OrderService>> _loggerMock = new();
+    private readonly Mock<IAppLogger<Application.Services.OrderService>> _loggerMock = new();
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<IOrderRepository> _orderRepositoryMock = new();
     private readonly Application.Services.OrderService _orderService;

@@ -1,8 +1,8 @@
 using AutoMapper;
-using Microsoft.Extensions.Logging;
 using PaymentService.Application.IServices;
 using PaymentService.Application.Requests;
 using PaymentService.Application.Responses;
+using PaymentService.Domain.ILogging;
 using PaymentService.Domain.IRepositories;
 using PaymentService.Domain.Models;
 
@@ -12,9 +12,9 @@ public class PaymentService : IPaymentService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    private readonly ILogger<PaymentService> _logger;
+    private readonly IAppLogger<PaymentService> _logger;
 
-    public PaymentService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<PaymentService> logger)
+    public PaymentService(IUnitOfWork unitOfWork, IMapper mapper, IAppLogger<PaymentService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;

@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Linq.Expressions;
 using AutoMapper;
-using Microsoft.Extensions.Logging;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
 using OrderService.Application.Responses;
+using OrderService.Domain.ILogging;
 using OrderService.Domain.IRepositories;
 using OrderService.Domain.Models;
 using PaymentService.API;
@@ -19,9 +19,10 @@ public class OrderService : IOrderService
     private readonly PaymentGrpcService.PaymentGrpcServiceClient _paymentGrpcServiceClient;
     private readonly ProductGrpcService.ProductGrpcServiceClient _productGrpcServiceClient;
     private readonly IAuthService  _authService;
-    private readonly ILogger<OrderService> _logger;
+    private readonly IAppLogger<OrderService> _logger;
 
-    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, PaymentGrpcService.PaymentGrpcServiceClient paymentGrpcServiceClient, ProductGrpcService.ProductGrpcServiceClient productGrpcServiceClient, IAuthService authService, ILogger<OrderService> logger)
+    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, PaymentGrpcService.PaymentGrpcServiceClient paymentGrpcServiceClient, 
+        ProductGrpcService.ProductGrpcServiceClient productGrpcServiceClient, IAuthService authService, IAppLogger<OrderService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
