@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using OrderService.Domain.ILogging;
+using OrderService.Application.Abstractions.Logging;
 
 namespace OrderService.Infrastructure.Logging;
 

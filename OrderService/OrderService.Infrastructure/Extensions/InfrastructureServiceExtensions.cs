@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OrderService.Application.Abstractions.Gateways;
-using OrderService.Domain.ILogging;
+using OrderService.Application.Abstractions.Logging;
 using OrderService.Domain.IRepositories;
 using OrderService.Infrastructure.BackgroundServices;
 using OrderService.Infrastructure.Data;

@@ -3,10 +3,10 @@ using AutoMapper;
 using FluentAssertions;
 using Moq;
 using OrderService.Application.Abstractions.Gateways;
+using OrderService.Application.Abstractions.Logging;
 using OrderService.Application.IServices;
 using OrderService.Application.Requests;
 using OrderService.Application.Responses;
-using OrderService.Domain.ILogging;
 using OrderService.Domain.IRepositories;
 using OrderService.Domain.Models;
 

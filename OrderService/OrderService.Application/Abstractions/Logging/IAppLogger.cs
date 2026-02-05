@@ -1,4 +1,4 @@
-namespace OrderService.Domain.ILogging;
+namespace OrderService.Application.Abstractions.Logging;
 
 public interface IAppLogger<T>
 {
