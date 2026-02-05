@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using UserService.Application.Constants;
 using UserService.Domain.IRepositories;
 using UserService.Domain.Models;
-using UserService.Infrastructure.Constants;
 using UserService.Infrastructure.Data;
 
 namespace UserService.Infrastructure.Repositories;
@@ -20,7 +20,7 @@ public class RoleRepository : Repository<Role>, IRoleRepository
     public async Task<List<Role>> GetAllRolesAsync(string? name, bool isActive, int itemsPerPage, int pageNumber)
     {
         var roles = _context.Roles.Where(x => x.IsActive == isActive && 
-                                              x.Name != Constants.Constants.AdminRole).AsQueryable();
+                                              x.Name != ApplicationConstants.AdminRole).AsQueryable();
 
         if (!string.IsNullOrEmpty(name))
         {
@@ -35,7 +35,7 @@ public class RoleRepository : Repository<Role>, IRoleRepository
     public async Task<int> GetAllRoleCountAsync(string? name, bool isActive)
     {
         var roles = _context.Roles.Where(x => x.IsActive == isActive && 
-                                              x.Name != Constants.Constants.AdminRole).AsQueryable();
+                                              x.Name != ApplicationConstants.AdminRole).AsQueryable();
 
         if (!string.IsNullOrEmpty(name))
         {

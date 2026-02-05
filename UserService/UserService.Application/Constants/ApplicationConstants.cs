@@ -1,6 +1,6 @@
-namespace UserService.Infrastructure.Constants;
+namespace UserService.Application.Constants;
 
-public static class Constants
+public static class ApplicationConstants
 {
     // Roles
     public const string AdminRole = "Admin";

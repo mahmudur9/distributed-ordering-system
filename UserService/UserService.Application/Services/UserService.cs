@@ -1,27 +1,30 @@
 using AutoMapper;
+using UserService.Application.Abstractions.Logging;
+using UserService.Application.Abstractions.Security;
+using UserService.Application.Constants;
 using UserService.Application.IServices;
 using UserService.Application.Requests;
 using UserService.Application.Responses;
-using UserService.Domain.ILogging;
 using UserService.Domain.IRepositories;
 using UserService.Domain.Models;
-using UserService.Infrastructure.Constants;
 
 namespace UserService.Application.Services;
 
 public class UserService : IUserService
 {
     private readonly IAuthService _authService;
+    private readonly IPasswordHasher  _passwordHasher;
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAppLogger<UserService> _logger;
 
-    public UserService(IUnitOfWork unitOfWork, IMapper mapper, IAuthService authService, IAppLogger<UserService> logger)
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper, IAuthService authService, IAppLogger<UserService> logger, IPasswordHasher passwordHasher)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _authService = authService;
         _logger = logger;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<PaginatedResponse<UserResponse>> GetAllUsersAsync(GetAllUsersFilter filter)
@@ -60,7 +63,7 @@ public class UserService : IUserService
             _logger.LogInformation("Creating a new user");
             var role = await _unitOfWork.RoleRepository.GetByIdAsync(userRequest.RoleId);
             if (role is null) throw new KeyNotFoundException("Role not found");
-            userRequest.Password = _authService.GenerateHash(userRequest.Password);
+            userRequest.Password = _passwordHasher.GenerateHash(userRequest.Password);
             await _unitOfWork.UserRepository.CreateAsync(_mapper.Map<User>(userRequest));
             await _unitOfWork.SaveChangesAsync();
         }
@@ -80,7 +83,7 @@ public class UserService : IUserService
             if (user is null) throw new Exception("User not found");
 
             if (id != _authService.GetAuthenticatedUserId() &&
-                _authService.GetAuthenticatedUserRole() != Constants.AdminRole)
+                _authService.GetAuthenticatedUserRole() != ApplicationConstants.AdminRole)
                 throw new UnauthorizedAccessException("Unauthorized");
 
             user = _mapper.Map(updateUserRequest, user);
@@ -103,7 +106,7 @@ public class UserService : IUserService
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
             if (user is null) throw new Exception("User not found");
 
-            if (_authService.GetAuthenticatedUserRole() != Constants.AdminRole)
+            if (_authService.GetAuthenticatedUserRole() != ApplicationConstants.AdminRole)
                 throw new UnauthorizedAccessException("Unauthorized");
 
             user.IsActive = false;
@@ -128,10 +131,10 @@ public class UserService : IUserService
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
             if (user is null) throw new KeyNotFoundException("User not found");
 
-            if (!_authService.VerifyPasswordHash(updatePasswordRequest.CurrentPassword, user.Password))
+            if (!_passwordHasher.VerifyPasswordHash(updatePasswordRequest.CurrentPassword, user.Password))
                 throw new ArgumentException("Incorrect current password!");
 
-            user.Password = _authService.GenerateHash(updatePasswordRequest.NewPassword);
+            user.Password = _passwordHasher.GenerateHash(updatePasswordRequest.NewPassword);
             user.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.UserRepository.UpdateAsync(user);
             await _unitOfWork.SaveChangesAsync();
@@ -150,7 +153,7 @@ public class UserService : IUserService
             _logger.LogInformation($"Login a user with email {loginRequest.Email}");
             var user = await _unitOfWork.UserRepository.GetUserByEmailAsync(loginRequest.Email);
             if (user is null) throw new ArgumentException("Incorrect email or password!");
-            if (!_authService.VerifyPasswordHash(loginRequest.Password, user.Password))
+            if (!_passwordHasher.VerifyPasswordHash(loginRequest.Password, user.Password))
                 throw new ArgumentException("Incorrect email or password!");
 
             var resposne = new LoginResponse

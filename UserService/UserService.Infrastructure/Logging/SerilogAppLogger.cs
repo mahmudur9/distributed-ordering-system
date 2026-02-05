@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using UserService.Domain.ILogging;
+using UserService.Application.Abstractions.Logging;
 
 namespace UserService.Infrastructure.Logging;
 

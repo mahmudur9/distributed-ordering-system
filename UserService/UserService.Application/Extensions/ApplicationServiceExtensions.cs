@@ -16,7 +16,6 @@ public static class ApplicationServiceExtensions
         services.AddAutoMapper(typeof(ApplicationServiceExtensions).Assembly);
 
         // Register services
-        // services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserService, Services.UserService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IRoleService, RoleService>();

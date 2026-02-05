@@ -1,8 +1,8 @@
 using AutoMapper;
+using UserService.Application.Abstractions.Logging;
 using UserService.Application.IServices;
 using UserService.Application.Requests;
 using UserService.Application.Responses;
-using UserService.Domain.ILogging;
 using UserService.Domain.IRepositories;
 
 namespace UserService.Application.Services;

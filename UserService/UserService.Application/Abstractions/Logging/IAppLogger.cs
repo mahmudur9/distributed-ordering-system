@@ -1,4 +1,4 @@
-namespace UserService.Domain.ILogging;
+namespace UserService.Application.Abstractions.Logging;
 
 public interface IAppLogger<T>
 {
