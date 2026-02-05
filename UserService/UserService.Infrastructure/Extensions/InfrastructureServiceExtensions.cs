@@ -31,6 +31,7 @@ public static class InfrastructureServiceExtensions
         
         // Register security services
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<ITokenHandler, JwtTokenHandler>();
 
         return services;
     }

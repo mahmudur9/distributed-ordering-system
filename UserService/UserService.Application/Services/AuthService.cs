@@ -1,10 +1,7 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
+using UserService.Application.Abstractions.Logging;
+using UserService.Application.Abstractions.Security;
 using UserService.Application.IServices;
 using UserService.Application.Requests;
 using UserService.Application.Responses;
@@ -13,36 +10,29 @@ namespace UserService.Application.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly IConfiguration _configuration;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ITokenHandler _tokenHandler;
+    private readonly IAppLogger<AuthService> _logger;
 
-    public AuthService(IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
+    public AuthService(IHttpContextAccessor httpContextAccessor, ITokenHandler tokenHandler, IAppLogger<AuthService> logger)
     {
-        _configuration = configuration;
         _httpContextAccessor = httpContextAccessor;
+        _tokenHandler = tokenHandler;
+        _logger = logger;
     }
 
     public string GenerateToken(Guid userId, string email, string role)
     {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var tokenKey = Encoding.ASCII.GetBytes(_configuration.GetSection("SecretKey").Value!);
-        var tokenDescriptor = new SecurityTokenDescriptor
+        try
         {
-            Subject = new ClaimsIdentity(new Claim[]
-            {
-                new Claim(type: "userId", value: userId.ToString()),
-                new Claim(ClaimTypes.Name, email),
-                new Claim(ClaimTypes.Role, role)
-            }),
-            Expires = DateTime.UtcNow.AddHours(int.Parse(_configuration.GetSection("TokenExpiryTimeInHours").Value!)),
-            SigningCredentials =
-                new SigningCredentials(
-                    new SymmetricSecurityKey(tokenKey),
-                    SecurityAlgorithms.HmacSha256Signature)
-        };
-
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+            _logger.LogInformation($"Generating token for user {userId}");
+            return _tokenHandler.GenerateToken(userId, email, role);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"Failed to generate token for user {userId}");
+            throw;
+        }
     }
 
     public Guid GetAuthenticatedUserId()
@@ -64,78 +54,6 @@ public class AuthService : IAuthService
 
     public TokenValidationResponse ValidateToken(TokenValidationRequest request)
     {
-        try
-        {
-            var handler = new JwtSecurityTokenHandler();
-            
-            var principal = handler.ValidateToken(
-                request.Token,
-                new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey =
-                        new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration.GetSection("SecretKey").Value!)),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                },
-                out _);
-
-            var claims = principal.Claims.Select(c => new {c.Type, c.Value});
-            
-            var claimResponses = new List<ClaimResponse>();
-            foreach (var claim in claims)
-            {
-                var claimResponse = new ClaimResponse()
-                {
-                    Type = claim.Type,
-                    Value = claim.Value
-                };
-                claimResponses.Add(claimResponse);
-            }
-            var response = new TokenValidationResponse()
-            {
-                Valid = true,
-                Claims = claimResponses
-            };
-            return response;
-        }
-        catch
-        {
-            throw new UnauthorizedAccessException("Invalid token!");
-        }
-    }
-
-    public TokenValidationResponse GetClaims()
-    {
-        try
-        {
-            var handler = new JwtSecurityTokenHandler();
-            
-            string token = _httpContextAccessor.HttpContext!.Request.Headers["Authorization"]!;
-            var jwt = handler.ReadJwtToken(token.Split("Bearer ")[1]);
-
-            var claims = jwt.Claims.Select(c => (c.Type, c.Value));
-            
-            var claimResponses = new List<ClaimResponse>();
-            foreach (var claim in claims)
-            {
-                var claimResponse = new ClaimResponse()
-                {
-                    Type = claim.Type,
-                    Value = claim.Value
-                };
-                claimResponses.Add(claimResponse);
-            }
-            var response = new TokenValidationResponse()
-            {
-                Valid = true,
-                Claims = claimResponses
-            };
-            return response;
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
+        return _tokenHandler.ValidateToken(request);
     }
 }
