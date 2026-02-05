@@ -1,6 +1,6 @@
-namespace ProductService.Infrastructure.Constants;
+namespace ProductService.Application.Constants;
 
-public static class Constants
+public static class ApplicationConstants
 {
     // Product picture type
     public const int PictureFromLink = 1;

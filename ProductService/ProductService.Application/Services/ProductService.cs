@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AutoMapper;
+using ProductService.Application.Constants;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
@@ -10,7 +11,6 @@ using ProductService.Domain.ICache;
 using ProductService.Domain.ILogging;
 using ProductService.Domain.IRepositories;
 using ProductService.Domain.Models;
-using ProductService.Infrastructure.Constants;
 
 namespace ProductService.Application.Services;
 
@@ -77,9 +77,9 @@ public class ProductService : IProductService
                 query += $"(@Name:{filter.Name + "*"} | @Name:{filter.Name})";
             }
 
-            var products = await _cache.GetAllJsonAsync<ProductResponse>(Constants.ProductCacheIndex, 
+            var products = await _cache.GetAllJsonAsync<ProductResponse>(ApplicationConstants.ProductCacheIndex, 
                 query, filter.PageNumber, filter.ItemsPerPage, "CreatedAt", "DESC");
-            var productCount = await _cache.GetAllCountAsync(Constants.ProductCacheIndex, query);
+            var productCount = await _cache.GetAllCountAsync(ApplicationConstants.ProductCacheIndex, query);
 
             var paginatedResponse = new PaginatedResponse<ProductResponse>(
                 products,
@@ -101,7 +101,7 @@ public class ProductService : IProductService
         try
         {
             _logger.LogInformation($"Getting product with id {id} from redis");
-            string? product = await _cache.GetJsonAsync(Constants.ProductCacheKeyPrefix + id);
+            string? product = await _cache.GetJsonAsync(ApplicationConstants.ProductCacheKeyPrefix + id);
             if (product is null)
             {
                 throw new Exception($"Product with id {id} not found");
@@ -130,17 +130,17 @@ public class ProductService : IProductService
 
         foreach (var picture in picturesRequest)
         {
-            if (!(picture.Type == Constants.PictureFromLink || picture.Type == Constants.PictureFromFile))
+            if (!(picture.Type == ApplicationConstants.PictureFromLink || picture.Type == ApplicationConstants.PictureFromFile))
             {
                 throw new ArgumentException("Invalid picture type!");
             }
 
-            if (picture.Type == Constants.PictureFromLink && string.IsNullOrEmpty(picture.Url))
+            if (picture.Type == ApplicationConstants.PictureFromLink && string.IsNullOrEmpty(picture.Url))
             {
                 throw new ArgumentException("The picture filed not be empty!");
             }
 
-            if (picture.Type == Constants.PictureFromFile && picture.MediaFile is null)
+            if (picture.Type == ApplicationConstants.PictureFromFile && picture.MediaFile is null)
             {
                 throw new ArgumentException("The picture filed not be empty!");
             }
@@ -151,15 +151,15 @@ public class ProductService : IProductService
     {
         foreach (var picture in picturesRequest)
         {
-            if (picture.Type == Constants.PictureFromLink)
+            if (picture.Type == ApplicationConstants.PictureFromLink)
             {
                 pictures.Add(new Picture()
                 {
-                    Type = Constants.PictureFromLink,
+                    Type = ApplicationConstants.PictureFromLink,
                     Url = picture.Url!
                 });
             }
-            else if (picture.Type == Constants.PictureFromFile)
+            else if (picture.Type == ApplicationConstants.PictureFromFile)
             {
                 using var content = new MultipartFormDataContent();
                 using var streamContent = new StreamContent(picture.MediaFile!.OpenReadStream());
@@ -175,7 +175,7 @@ public class ProductService : IProductService
                     var pictureResponse = await httpResponse.Content.ReadFromJsonAsync<PictureRequest>();
                     pictures.Add(new Picture()
                     {
-                        Type = Constants.PictureFromFile,
+                        Type = ApplicationConstants.PictureFromFile,
                         Url = pictureResponse!.Url!
                     });
                 }
@@ -234,7 +234,7 @@ public class ProductService : IProductService
             await _unitOfWork.ProductRepository.CreateAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
-            await _cache.SetJsonAsync(Constants.ProductCacheKeyPrefix + product.Id, _mapper.Map<ProductResponse>(product));
+            await _cache.SetJsonAsync(ApplicationConstants.ProductCacheKeyPrefix + product.Id, _mapper.Map<ProductResponse>(product));
 
             await _unitOfWork.CommitTransactionAsync();
         }
@@ -282,7 +282,7 @@ public class ProductService : IProductService
             await _unitOfWork.ProductRepository.UpdateAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
-            await _cache.SetJsonAsync(Constants.ProductCacheKeyPrefix + product.Id, _mapper.Map<ProductResponse>(product));
+            await _cache.SetJsonAsync(ApplicationConstants.ProductCacheKeyPrefix + product.Id, _mapper.Map<ProductResponse>(product));
 
             await _unitOfWork.CommitTransactionAsync();
         }
@@ -314,7 +314,7 @@ public class ProductService : IProductService
             await _unitOfWork.ProductRepository.UpdateAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
-            await _cache.DeleteJsonAsync(Constants.ProductCacheKeyPrefix + product.Id);
+            await _cache.DeleteJsonAsync(ApplicationConstants.ProductCacheKeyPrefix + product.Id);
 
             await _unitOfWork.CommitTransactionAsync();
         }
@@ -373,7 +373,7 @@ public class ProductService : IProductService
 
             foreach (var product in products)
             {
-                await _cache.SetJsonAsync(Constants.ProductCacheKeyPrefix + product.Id,"Stock", product.Stock);
+                await _cache.SetJsonAsync(ApplicationConstants.ProductCacheKeyPrefix + product.Id,"Stock", product.Stock);
             }
 
             await _unitOfWork.CommitTransactionAsync();

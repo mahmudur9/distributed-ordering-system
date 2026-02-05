@@ -3,13 +3,13 @@ using System.Text.Json;
 using AutoMapper;
 using FluentAssertions;
 using Moq;
+using ProductService.Application.Constants;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
 using ProductService.Domain.ICache;
 using ProductService.Domain.ILogging;
 using ProductService.Domain.IRepositories;
 using ProductService.Domain.Models;
-using ProductService.Infrastructure.Constants;
 
 namespace ProductService.UnitTests;
 
@@ -183,7 +183,7 @@ public class ProductServiceTests
 
         _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
         
-        _cacheMock.Verify(x => x.SetJsonAsync(Constants.ProductCacheKeyPrefix + productResponse.Id, 
+        _cacheMock.Verify(x => x.SetJsonAsync(ApplicationConstants.ProductCacheKeyPrefix + productResponse.Id, 
             productResponse, It.IsAny<int?>()));
 
         _unitOfWorkMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
@@ -236,13 +236,13 @@ public class ProductServiceTests
 
         _cacheMock
             .Setup(x => x.GetAllJsonAsync<ProductResponse>(
-                Constants.ProductCacheIndex,
+                ApplicationConstants.ProductCacheIndex,
                 "@IsActive:{True} ",
                 1, 10, "CreatedAt", "DESC"))
             .ReturnsAsync(products);
 
         _cacheMock
-            .Setup(x => x.GetAllCountAsync(Constants.ProductCacheIndex, "@IsActive:{True} "))
+            .Setup(x => x.GetAllCountAsync(ApplicationConstants.ProductCacheIndex, "@IsActive:{True} "))
             .ReturnsAsync(1);
 
         // Act
@@ -277,13 +277,13 @@ public class ProductServiceTests
 
         _cacheMock
             .Setup(x => x.GetAllJsonAsync<ProductResponse>(
-                Constants.ProductCacheIndex,
+                ApplicationConstants.ProductCacheIndex,
                 expectedQuery,
                 2, 5, "CreatedAt", "DESC"))
             .ReturnsAsync(new List<ProductResponse>());
 
         _cacheMock
-            .Setup(x => x.GetAllCountAsync(Constants.ProductCacheIndex, expectedQuery))
+            .Setup(x => x.GetAllCountAsync(ApplicationConstants.ProductCacheIndex, expectedQuery))
             .ReturnsAsync(0);
 
         // Act
@@ -329,7 +329,7 @@ public class ProductServiceTests
         var json = JsonSerializer.Serialize(product);
 
         _cacheMock
-            .Setup(x => x.GetJsonAsync(Constants.ProductCacheKeyPrefix + id))
+            .Setup(x => x.GetJsonAsync(ApplicationConstants.ProductCacheKeyPrefix + id))
             .ReturnsAsync(json);
 
         // Act
@@ -341,7 +341,7 @@ public class ProductServiceTests
         Assert.Equal("Phone", result.Name);
 
         _cacheMock.Verify(x =>
-                x.GetJsonAsync(Constants.ProductCacheKeyPrefix + id),
+                x.GetJsonAsync(ApplicationConstants.ProductCacheKeyPrefix + id),
             Times.Once);
     }
     
@@ -352,7 +352,7 @@ public class ProductServiceTests
         var id = Guid.NewGuid();
 
         _cacheMock
-            .Setup(x => x.GetJsonAsync(Constants.ProductCacheKeyPrefix + id))
+            .Setup(x => x.GetJsonAsync(ApplicationConstants.ProductCacheKeyPrefix + id))
             .ReturnsAsync((string?)null);
 
         // Act + Assert

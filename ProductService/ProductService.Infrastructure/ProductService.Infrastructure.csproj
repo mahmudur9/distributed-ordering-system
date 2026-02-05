@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\ProductService.Domain\ProductService.Domain.csproj"/>
+        <ProjectReference Include="..\ProductService.Application\ProductService.Application.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -17,11 +18,13 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6"/>
-        <PackageReference Include="Grpc.AspNetCore" Version="2.76.0" />
         <PackageReference Include="Serilog" Version="4.3.0" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
         <PackageReference Include="StackExchange.Redis" Version="2.10.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="HttpClients\" />
     </ItemGroup>
 
 </Project>

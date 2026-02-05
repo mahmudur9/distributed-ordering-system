@@ -58,6 +58,9 @@ public static class InfrastructureServiceExtensions
         // Register logging
         services.AddScoped(typeof(IAppLogger<>), typeof(SerilogAppLogger<>));
         
+        // Register http context accessor
+        services.AddHttpContextAccessor(); // Grpc package contains Microsoft.AspNetCore.Http.Abstractions
+        
         return services;
     }
 }

@@ -15,9 +15,6 @@ public static class ApplicationServiceExtensions
         // Register services
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProductService, Services.ProductService>();
-        
-        // Register http context accessor
-        services.AddHttpContextAccessor(); // Grpc package contains Microsoft.AspNetCore.Http.Abstractions
 
         return services;
     }
