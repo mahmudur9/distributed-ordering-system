@@ -16,14 +16,23 @@ COPY ["UserService.API/UserService.API.csproj", "UserService.API/"]
 COPY ["UserService.Application/UserService.Application.csproj", "UserService.Application/"]
 COPY ["UserService.Domain/UserService.Domain.csproj", "UserService.Domain/"]
 COPY ["UserService.Infrastructure/UserService.Infrastructure.csproj", "UserService.Infrastructure/"]
+COPY ["UserService.UnitTests/UserService.UnitTests.csproj", "UserService.UnitTests/"]
 RUN dotnet restore "./UserService.API/UserService.API.csproj"
 COPY . .
 WORKDIR "/src/UserService.API"
 RUN dotnet build "./UserService.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
+FROM build AS test
+
+WORKDIR /src/UserService.UnitTests
+
+# If tests fail → docker build fails automatically
+RUN dotnet test "UserService.UnitTests.csproj" -c $BUILD_CONFIGURATION --verbosity normal
+
 # This stage is used to publish the service project to be copied to the final stage
-FROM build AS publish
+FROM test AS publish
 ARG BUILD_CONFIGURATION=Release
+WORKDIR /src/UserService.API
 RUN dotnet publish "./UserService.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)

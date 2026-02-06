@@ -80,7 +80,7 @@ public class UserService : IUserService
         {
             _logger.LogInformation($"Updating a user with id {id}");
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
-            if (user is null) throw new Exception("User not found");
+            if (user is null) throw new KeyNotFoundException("User not found");
 
             if (id != _authService.GetAuthenticatedUserId() &&
                 _authService.GetAuthenticatedUserRole() != ApplicationConstants.AdminRole)
@@ -104,7 +104,7 @@ public class UserService : IUserService
         {
             _logger.LogInformation($"Deleting a user with id {id}");
             var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
-            if (user is null) throw new Exception("User not found");
+            if (user is null) throw new KeyNotFoundException("User not found");
 
             if (_authService.GetAuthenticatedUserRole() != ApplicationConstants.AdminRole)
                 throw new UnauthorizedAccessException("Unauthorized");
