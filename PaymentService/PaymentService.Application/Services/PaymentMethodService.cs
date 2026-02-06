@@ -54,7 +54,7 @@ public class PaymentMethodService : IPaymentMethodService
             var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetByIdAsync(id);
             if (paymentMethod is null)
             {
-                throw new Exception($"Payment Method with {id} not found");
+                throw new KeyNotFoundException($"Payment Method with {id} not found");
             }
             return  _mapper.Map<PaymentMethodResponse>(paymentMethod);
         }
@@ -89,7 +89,7 @@ public class PaymentMethodService : IPaymentMethodService
             var paymentMethod = await _unitOfWork.PaymentMethodRepository.GetByIdAsync(id);
             if (paymentMethod is null)
             {
-                throw new Exception($"Payment Method with {id} not found");
+                throw new KeyNotFoundException($"Payment Method with {id} not found");
             }
             
             paymentMethod = _mapper.Map(paymentMethodRequest, paymentMethod);
