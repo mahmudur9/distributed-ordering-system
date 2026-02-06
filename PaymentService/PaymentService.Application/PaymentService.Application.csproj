@@ -8,11 +8,11 @@
 
     <ItemGroup>
       <ProjectReference Include="..\PaymentService.Domain\PaymentService.Domain.csproj" />
-      <ProjectReference Include="..\PaymentService.Infrastructure\PaymentService.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="13.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6"/>
     </ItemGroup>
 
 </Project>

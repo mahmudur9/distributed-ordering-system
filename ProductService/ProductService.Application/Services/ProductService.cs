@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 using AutoMapper;
 using ProductService.Application.Abstractions.Gateways;
@@ -170,7 +169,7 @@ public class ProductService : IProductService
                 content.Add(streamContent, nameof(picture.MediaFile), picture.MediaFile.FileName);
 
                 var pictureResponse = await _objectStoreGateway.UploadFileAsync<PictureRequest>(content);
-                pictures.Add(new Picture()
+                pictures.Add(new()
                 {
                     Type = ApplicationConstants.PictureFromFile,
                     Url = pictureResponse!.Url!
