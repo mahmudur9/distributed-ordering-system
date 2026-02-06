@@ -54,7 +54,7 @@ public class PaymentService : IPaymentService
             var payment = await _unitOfWork.PaymentRepository.GetByIdAsync(id);
             if (payment is null)
             {
-                throw new Exception($"Payment with id {id} not found");
+                throw new KeyNotFoundException($"Payment with id {id} not found");
             }
             
             return _mapper.Map<PaymentResponse>(payment);

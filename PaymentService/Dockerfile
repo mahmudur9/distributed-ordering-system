@@ -17,14 +17,23 @@ COPY ["PaymentService.API/PaymentService.API.csproj", "PaymentService.API/"]
 COPY ["PaymentService.Application/PaymentService.Application.csproj", "PaymentService.Application/"]
 COPY ["PaymentService.Domain/PaymentService.Domain.csproj", "PaymentService.Domain/"]
 COPY ["PaymentService.Infrastructure/PaymentService.Infrastructure.csproj", "PaymentService.Infrastructure/"]
+COPY ["PaymentService.UnitTests/PaymentService.UnitTests.csproj", "PaymentService.UnitTests/"]
 RUN dotnet restore "./PaymentService.API/PaymentService.API.csproj"
 COPY . .
 WORKDIR "/src/PaymentService.API"
 RUN dotnet build "./PaymentService.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
+FROM build AS test
+
+WORKDIR /src/PaymentService.UnitTests
+
+# If tests fail → docker build fails automatically
+RUN dotnet test "PaymentService.UnitTests.csproj" -c $BUILD_CONFIGURATION --verbosity normal
+
 # This stage is used to publish the service project to be copied to the final stage
-FROM build AS publish
+FROM test AS publish
 ARG BUILD_CONFIGURATION=Release
+WORKDIR /src/PaymentService.API
 RUN dotnet publish "./PaymentService.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
