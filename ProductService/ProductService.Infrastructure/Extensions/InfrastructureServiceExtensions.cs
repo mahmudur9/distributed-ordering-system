@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ProductService.Application.Abstractions.Gateways;
 using ProductService.Domain.ICache;
 using ProductService.Domain.ILogging;
 using ProductService.Domain.IRepositories;
 using ProductService.Infrastructure.BackgroundServices;
 using ProductService.Infrastructure.Cache;
 using ProductService.Infrastructure.Data;
+using ProductService.Infrastructure.HttpClients;
 using ProductService.Infrastructure.Logging;
 using ProductService.Infrastructure.Repositories;
 using StackExchange.Redis;
@@ -41,6 +43,8 @@ public static class InfrastructureServiceExtensions
             client.DefaultRequestHeaders.Add("Accept", "application/json");
             client.Timeout = TimeSpan.FromSeconds(10);
         });
+
+        services.AddScoped<IObjectStoreGateway, ObjectStoreClient>();
         
         // Register Redis
         services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -59,7 +63,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped(typeof(IAppLogger<>), typeof(SerilogAppLogger<>));
         
         // Register http context accessor
-        services.AddHttpContextAccessor(); // Grpc package contains Microsoft.AspNetCore.Http.Abstractions
+        services.AddHttpContextAccessor(); // Grpc package contains Microsoft.AspNetCore.Http
         
         return services;
     }

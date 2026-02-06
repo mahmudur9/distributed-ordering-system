@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AutoMapper;
+using ProductService.Application.Abstractions.Gateways;
 using ProductService.Application.Constants;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
@@ -18,16 +19,16 @@ public class ProductService : IProductService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IObjectStoreGateway  _objectStoreGateway;
     private readonly ICache _cache;
     private readonly IAppLogger<ProductService> _logger;
 
-    public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IHttpClientFactory httpClientFactory, ICache cache, 
+    public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IObjectStoreGateway objectStoreGateway, ICache cache, 
         IAppLogger<ProductService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
-        _httpClientFactory = httpClientFactory;
+        _objectStoreGateway = objectStoreGateway;
         _cache = cache;
         _logger = logger;
     }
@@ -168,21 +169,12 @@ public class ProductService : IProductService
 
                 content.Add(streamContent, nameof(picture.MediaFile), picture.MediaFile.FileName);
 
-                var httpResponse = await _httpClientFactory.CreateClient("object-store-service")
-                    .PostAsync("media/upload", content);
-                if (httpResponse.IsSuccessStatusCode)
+                var pictureResponse = await _objectStoreGateway.UploadFileAsync<PictureRequest>(content);
+                pictures.Add(new Picture()
                 {
-                    var pictureResponse = await httpResponse.Content.ReadFromJsonAsync<PictureRequest>();
-                    pictures.Add(new Picture()
-                    {
-                        Type = ApplicationConstants.PictureFromFile,
-                        Url = pictureResponse!.Url!
-                    });
-                }
-                else
-                {
-                    throw new Exception("Image uploading failed!");
-                }
+                    Type = ApplicationConstants.PictureFromFile,
+                    Url = pictureResponse!.Url!
+                });
             }
         }
     }

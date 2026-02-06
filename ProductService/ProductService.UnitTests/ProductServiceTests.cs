@@ -3,6 +3,7 @@ using System.Text.Json;
 using AutoMapper;
 using FluentAssertions;
 using Moq;
+using ProductService.Application.Abstractions.Gateways;
 using ProductService.Application.Constants;
 using ProductService.Application.Requests;
 using ProductService.Application.Responses;
@@ -21,7 +22,7 @@ public class ProductServiceTests
     private readonly Mock<IProductRepository> _productRepoMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     
-    private readonly Mock<IHttpClientFactory> _httpFactoryMock = new();
+    private readonly Mock<IObjectStoreGateway> _objectStoreGatewayMock = new();
     private readonly Mock<IAppLogger<Application.Services.ProductService>> _loggerMock = new();
     private readonly Mock<IMapper> _mapperMock = new();
     
@@ -38,7 +39,7 @@ public class ProductServiceTests
         _service = new Application.Services.ProductService(
             _unitOfWorkMock.Object,
             _mapperMock.Object,
-            _httpFactoryMock.Object,
+            _objectStoreGatewayMock.Object,
             _cacheMock.Object,
             _loggerMock.Object
         );
