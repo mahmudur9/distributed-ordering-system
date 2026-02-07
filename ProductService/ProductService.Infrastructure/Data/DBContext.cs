@@ -10,6 +10,9 @@ public class DBContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
+        modelBuilder.Entity<Product>().HasIndex(x => x.Name).IsUnique();
+        modelBuilder.Entity<Category>().HasIndex(x => x.Name).IsUnique();
     }
 
     public DbSet<Product> Products { get; set; }

@@ -215,6 +215,11 @@ public class ProductService : IProductService
                 throw new KeyNotFoundException("Category not found!");
             }
 
+            if (await _unitOfWork.ProductRepository.AnyAsync([x => x.Name.ToLower() == productRequest.Name!.ToLower()]))
+            {
+                throw new ArgumentException("A product with that name already exists!");
+            }
+
             ValidatePictures(productRequest.Pictures);
 
             var product = MapToProduct(productRequest);
@@ -247,6 +252,11 @@ public class ProductService : IProductService
             if (product is null)
             {
                 throw new Exception($"Product with id {id} not found");
+            }
+            
+            if (await _unitOfWork.ProductRepository.AnyAsync([x => x.Name.ToLower() == productRequest.Name!.ToLower()]))
+            {
+                throw new ArgumentException("A product with that name already exists!");
             }
 
             if (productRequest.Pictures.Count + product.Pictures.Count - productRequest.DeletePictureIds.Count > 5)

@@ -74,6 +74,10 @@ public class CategoryService : ICategoryService
         try
         {
             _logger.LogInformation("Creating new category");
+            if (await _unitOfWork.CategoryRepository.AnyAsync([x => x.Name.ToLower() == categoryRequest.Name!.ToLower()]))
+            {
+                throw new ArgumentException("A category with that name already exists!");
+            }
             var category = _mapper.Map<Category>(categoryRequest);
             category.CreatedAt = DateTime.UtcNow;
             category.UpdatedAt = DateTime.UtcNow;
@@ -97,6 +101,11 @@ public class CategoryService : ICategoryService
             if (category is null)
             {
                 throw new KeyNotFoundException($"Category with id {id} not found");
+            }
+            
+            if (await _unitOfWork.CategoryRepository.AnyAsync([x => x.Name.ToLower() == categoryRequest.Name!.ToLower()]))
+            {
+                throw new ArgumentException("A category with that name already exists!");
             }
             
             category =  _mapper.Map(categoryRequest, category);
