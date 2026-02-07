@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using Moq;
 using UserService.Application.Abstractions.Logging;
@@ -47,17 +48,16 @@ public class RoleServiceTests
         _mapperMock.Setup(x => x.Map<IEnumerable<RoleResponse>>(It.IsAny<List<Role>>())).Returns(roleResponses);
 
         _roleRepositoryMock
-            .Setup<Task<List<Role>>>(x => x.GetAllRolesAsync(
-                It.IsAny<string>(),
-                It.IsAny<bool>(),
+            .Setup<Task<List<Role>>>(x => x.GetAllAsync(
+                It.IsAny<IEnumerable<Expression<Func<Role, bool>>>>(),
                 It.IsAny<int>(),
-                It.IsAny<int>()
+                It.IsAny<int>(),
+                It.IsAny<Func<IQueryable<Role>, IOrderedQueryable<Role>>?>()
             )).ReturnsAsync(It.IsAny<List<Role>>());
 
         _roleRepositoryMock
-            .Setup<Task<int>>(x => x.GetAllRoleCountAsync(
-                It.IsAny<string?>(),
-                It.IsAny<bool>()
+            .Setup<Task<int>>(x => x.CountAsync(
+                It.IsAny<IEnumerable<Expression<Func<Role, bool>>>>()
             )).ReturnsAsync(1);
 
         

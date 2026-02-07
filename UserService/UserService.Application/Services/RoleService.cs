@@ -1,9 +1,12 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using UserService.Application.Abstractions.Logging;
+using UserService.Application.Constants;
 using UserService.Application.IServices;
 using UserService.Application.Requests;
 using UserService.Application.Responses;
 using UserService.Domain.IRepositories;
+using UserService.Domain.Models;
 
 namespace UserService.Application.Services;
 
@@ -25,9 +28,13 @@ public class RoleService : IRoleService
         try
         {
             _logger.LogInformation("Getting all roles");
-            var roles = await _unitOfWork.RoleRepository.GetAllRolesAsync(filter.Name, 
-                filter.IsActive, filter.ItemsPerPage, filter.PageNumber);
-            var roleCount = await _unitOfWork.RoleRepository.GetAllRoleCountAsync(filter.Name, filter.IsActive);
+            List<Expression<Func<Role, bool>>> filters =
+            [
+                x => x.IsActive == filter.IsActive && x.Name != ApplicationConstants.AdminRole
+            ];
+            if (filter.Name is not null) filters.Add(x => x.Name.ToLower().Contains(filter.Name.ToLower()));
+            var roles = await _unitOfWork.RoleRepository.GetAllAsync(filters, filter.ItemsPerPage, filter.PageNumber);
+            var roleCount = await _unitOfWork.RoleRepository.CountAsync(filters);
 
             var paginatedResponse = new PaginatedResponse<RoleResponse>(
                 _mapper.Map<IEnumerable<RoleResponse>>(roles),
