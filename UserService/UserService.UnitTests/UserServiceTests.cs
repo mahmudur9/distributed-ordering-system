@@ -432,7 +432,8 @@ public class UserServiceTests
         };
         
         _userRepositoryMock.Setup(x => x.GetAsync(
-            It.IsAny<IEnumerable<Expression<Func<User, bool>>>>()
+            It.IsAny<IEnumerable<Expression<Func<User, bool>>>>(),
+            It.IsAny<IEnumerable<Expression<Func<User, Object>>>>()
             )).ReturnsAsync(user);
         _passwordHasherMock.Setup(x => x.VerifyPasswordHash(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
         _authServiceMock.Setup(x => x.GenerateToken(user.Id, user.Email, user.Role.Name))
@@ -460,7 +461,8 @@ public class UserServiceTests
         };
         
         _userRepositoryMock.Setup(x => x.GetAsync(
-            It.IsAny<IEnumerable<Expression<Func<User, bool>>>>()
+            It.IsAny<IEnumerable<Expression<Func<User, bool>>>>(),
+            It.IsAny<IEnumerable<Expression<Func<User, Object>>>>()
             )).ReturnsAsync(It.IsAny<User>());
         
         // Act
@@ -495,7 +497,8 @@ public class UserServiceTests
             }
         };
         _userRepositoryMock.Setup(x => x.GetAsync(
-            It.IsAny<IEnumerable<Expression<Func<User, bool>>>>()
+            It.IsAny<IEnumerable<Expression<Func<User, bool>>>>(),
+            It.IsAny<IEnumerable<Expression<Func<User, Object>>>>()
             )).ReturnsAsync(user);
         _passwordHasherMock.Setup(x => x.VerifyPasswordHash(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
         
