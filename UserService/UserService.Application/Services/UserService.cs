@@ -158,7 +158,9 @@ public class UserService : IUserService
         try
         {
             _logger.LogInformation($"Login a user with email {loginRequest.Email}");
-            var user = await _unitOfWork.UserRepository.GetAsync([x => x.Email == loginRequest.Email && x.IsActive]);
+            var user = await _unitOfWork.UserRepository.GetAsync(
+                [x => x.Email == loginRequest.Email && x.IsActive], 
+                [x => x.Role!]);
             if (user is null) throw new ArgumentException("Incorrect email or password!");
             if (!_passwordHasher.VerifyPasswordHash(loginRequest.Password, user.Password))
                 throw new ArgumentException("Incorrect email or password!");
