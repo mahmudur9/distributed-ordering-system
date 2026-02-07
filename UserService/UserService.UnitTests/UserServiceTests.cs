@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using FluentAssertions;
 using Moq;
@@ -55,17 +56,17 @@ public class UserServiceTests
         _mapperMock.Setup(x => x.Map<IEnumerable<UserResponse>>(It.IsAny<List<User>>())).Returns(userResponses);
 
         _userRepositoryMock
-            .Setup<Task<List<User>>>(x => x.GetAllUsersAsync(
-                It.IsAny<string?>(),
-                It.IsAny<bool>(),
+            .Setup<Task<List<User>>>(x => x.GetAllAsync(
+                It.IsAny<IEnumerable<Expression<Func<User, bool>>>>(),
+                It.IsAny<IEnumerable<Expression<Func<User, Object>>>>(),
                 It.IsAny<int>(),
-                It.IsAny<int>()
+                It.IsAny<int>(),
+                It.IsAny<Func<IQueryable<User>, IOrderedQueryable<User>>?>()
             )).ReturnsAsync(It.IsAny<List<User>>());
 
         _userRepositoryMock
-            .Setup<Task<int>>(x => x.GetAllUserCountAsync(
-                It.IsAny<string?>(),
-                It.IsAny<bool>()
+            .Setup<Task<int>>(x => x.CountAsync(
+                It.IsAny<IEnumerable<Expression<Func<User, bool>>>>()
             )).ReturnsAsync(1);
 
         
@@ -430,7 +431,9 @@ public class UserServiceTests
             }
         };
         
-        _userRepositoryMock.Setup(x => x.GetUserByEmailAsync(It.IsAny<string>())).ReturnsAsync(user);
+        _userRepositoryMock.Setup(x => x.GetAsync(
+            It.IsAny<IEnumerable<Expression<Func<User, bool>>>>()
+            )).ReturnsAsync(user);
         _passwordHasherMock.Setup(x => x.VerifyPasswordHash(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
         _authServiceMock.Setup(x => x.GenerateToken(user.Id, user.Email, user.Role.Name))
             .Returns("test");
@@ -456,7 +459,9 @@ public class UserServiceTests
             Password = "123456"
         };
         
-        _userRepositoryMock.Setup(x => x.GetUserByEmailAsync(It.IsAny<string>())).ReturnsAsync(It.IsAny<User>());
+        _userRepositoryMock.Setup(x => x.GetAsync(
+            It.IsAny<IEnumerable<Expression<Func<User, bool>>>>()
+            )).ReturnsAsync(It.IsAny<User>());
         
         // Act
         Func<Task> act = async () => await _userService.LoginAsync(loginRequest);
@@ -489,7 +494,9 @@ public class UserServiceTests
                 Name = "User"
             }
         };
-        _userRepositoryMock.Setup(x => x.GetUserByEmailAsync(It.IsAny<string>())).ReturnsAsync(user);
+        _userRepositoryMock.Setup(x => x.GetAsync(
+            It.IsAny<IEnumerable<Expression<Func<User, bool>>>>()
+            )).ReturnsAsync(user);
         _passwordHasherMock.Setup(x => x.VerifyPasswordHash(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
         
         // Act

@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using UserService.Application.Abstractions.Logging;
 using UserService.Application.Abstractions.Security;
@@ -32,9 +33,15 @@ public class UserService : IUserService
         try
         {
             _logger.LogInformation("Getting all users");
-            var users = await _unitOfWork.UserRepository.GetAllUsersAsync(filter.Name,
-                filter.IsActive, filter.ItemsPerPage, filter.PageNumber);
-            var userCount = await _unitOfWork.UserRepository.GetAllUserCountAsync(filter.Name, filter.IsActive);
+            List<Expression<Func<User, bool>>> filters =
+            [
+                x => x.IsActive == filter.IsActive
+            ];
+            if (filter.Name is not null) filters.Add(x => x.Name.ToLower().Contains(filter.Name.ToLower()));
+            
+            var users = await _unitOfWork.UserRepository.GetAllAsync(filters, [x => x.Role!], 
+                filter.ItemsPerPage, filter.PageNumber, x => x.OrderByDescending(o => o.CreatedAt));
+            var userCount = await _unitOfWork.UserRepository.CountAsync(filters);
 
             var paginatedResponse = new PaginatedResponse<UserResponse>(
                 _mapper.Map<IEnumerable<UserResponse>>(users),
@@ -151,7 +158,7 @@ public class UserService : IUserService
         try
         {
             _logger.LogInformation($"Login a user with email {loginRequest.Email}");
-            var user = await _unitOfWork.UserRepository.GetUserByEmailAsync(loginRequest.Email);
+            var user = await _unitOfWork.UserRepository.GetAsync([x => x.Email == loginRequest.Email && x.IsActive]);
             if (user is null) throw new ArgumentException("Incorrect email or password!");
             if (!_passwordHasher.VerifyPasswordHash(loginRequest.Password, user.Password))
                 throw new ArgumentException("Incorrect email or password!");
@@ -175,7 +182,8 @@ public class UserService : IUserService
         {
             var userId = _authService.GetAuthenticatedUserId();
             _logger.LogInformation($"Authenticating a user with id {userId}");
-            var user = await _unitOfWork.UserRepository.GetUserByIdAsync(userId);
+            var user = await _unitOfWork.UserRepository.GetAsync([x => x.Id == userId && x.IsActive], 
+                [x => x.Role!]);
             return _mapper.Map<UserResponse>(user);
         }
         catch (Exception ex)
