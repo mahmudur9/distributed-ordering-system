@@ -10,6 +10,8 @@ public class DBContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Order>().HasIndex(x => x.CreatedAt);
     }
 
     public DbSet<Order> Orders { get; set; }
