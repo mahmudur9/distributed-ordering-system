@@ -1,4 +1,6 @@
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi.Models;
 using OrderService.API.Middlewares;
 using OrderService.Application.Extensions;
@@ -41,6 +43,17 @@ builder.WebHost.ConfigureKestrel(options =>
 // Register extensions
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
+
+// RateLimiter
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddConcurrencyLimiter("concurrent", opt =>
+    {
+        opt.PermitLimit = 15;
+        opt.QueueLimit = 30;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+});
 
 // Remote jwt auth start
 builder.Services
@@ -105,6 +118,8 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+app.UseRateLimiter();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -123,7 +138,6 @@ app.UseAuthorization();
 // Prometheus metrics
 app.MapMetrics();
 
-// app.MapGrpcService<GreeterService>();
-app.MapControllers();
+app.MapControllers().RequireRateLimiting("concurrent");
 
 app.Run();

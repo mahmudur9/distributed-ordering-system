@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.OpenApi.Models;
 using ProductService.API.Grpc;
@@ -41,6 +43,17 @@ builder.WebHost.ConfigureKestrel(options =>
 // Register extensions
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
+
+// RateLimiter
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddConcurrencyLimiter("concurrent", opt =>
+    {
+        opt.PermitLimit = 15;
+        opt.QueueLimit = 30;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+});
 
 // Remote jwt auth start
 builder.Services
@@ -107,6 +120,8 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+app.UseRateLimiter();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -127,6 +142,6 @@ app.UseAuthorization();
 app.MapMetrics();
 
 app.MapGrpcService<ProductGrpc>();
-app.MapControllers();
+app.MapControllers().RequireRateLimiting("concurrent");
 
 app.Run();

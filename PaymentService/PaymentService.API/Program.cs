@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using PaymentService.API.Grpc;
 using PaymentService.API.Middlewares;
 using PaymentService.Application.Extensions;
@@ -41,6 +43,17 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 
+// RateLimiter
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddConcurrencyLimiter("concurrent", opt =>
+    {
+        opt.PermitLimit = 15;
+        opt.QueueLimit = 30;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+});
+
 // Configure serilog
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -62,6 +75,8 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseRateLimiter();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -79,6 +94,6 @@ app.UseAuthorization();
 app.MapMetrics();
 
 app.MapGrpcService<PaymentGrpc>();
-app.MapControllers();
+app.MapControllers().RequireRateLimiting("concurrent");
 
 app.Run();

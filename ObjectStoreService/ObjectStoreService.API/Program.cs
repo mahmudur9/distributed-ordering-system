@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using ObjectStoreService.API.Middlewares;
 using ObjectStoreService.Application.Extensions;
 using ObjectStoreService.Infrastructure.Extensions;
@@ -40,6 +42,17 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 
+// RateLimiter
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddConcurrencyLimiter("concurrent", opt =>
+    {
+        opt.PermitLimit = 15;
+        opt.QueueLimit = 30;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+});
+
 // Configure serilog
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -60,6 +73,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseRateLimiter();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -82,6 +97,6 @@ app.UseAuthorization();
 app.MapMetrics();
 
 // app.MapGrpcService<GreeterService>();
-app.MapControllers();
+app.MapControllers().RequireRateLimiting("concurrent");
 
 app.Run();
