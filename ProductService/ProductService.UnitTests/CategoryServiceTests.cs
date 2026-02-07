@@ -224,6 +224,65 @@ public class CategoryServiceTests
     }
     
     [Fact]
+    public async Task CreateCategoryAsync_Should_Throw_When_Category_With_That_Name_Already_Exists()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var category = new Category() { Id = id, Name = "Test", IsActive = true };
+        _mapperMock.Setup(x => x.Map<Category>(It.IsAny<CategoryRequest>())).Returns(category);
+
+        _categoryRepoMock.Setup(x => x.AnyAsync(
+            It.IsAny<IEnumerable<Expression<Func<Category, bool>>>>()
+        )).ReturnsAsync(true);
+
+        // Act
+        Func<Task> act = async () => await _service.CreateCategoryAsync(It.IsAny<CategoryRequest>());
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("A category with that name already exists!");
+    }
+    
+    [Fact]
+    public async Task UpdateCategoryAsync_Should_Throw_When_Category_With_That_Name_Already_Exists()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var category = new Category() { Id = id, Name = "Test", IsActive = true };
+
+        _categoryRepoMock
+            .Setup<Task<Category?>>(x => x.GetByIdAsync(id)).ReturnsAsync(category);
+        _categoryRepoMock
+            .Setup<Task>(x => x.UpdateAsync(It.IsAny<Category>()));
+        _mapperMock.Setup(x => x.Map(It.IsAny<CategoryRequest>(), category)).Returns(category);
+        
+        _categoryRepoMock.Setup(x => x.AnyAsync(
+            It.IsAny<IEnumerable<Expression<Func<Category, bool>>>>()
+        )).ReturnsAsync(true);
+
+        // Act
+        Func<Task> act = async () => await _service.UpdateCategoryAsync(id, It.IsAny<CategoryRequest>());
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("A category with that name already exists!");
+    }
+    
+    [Fact]
+    public async Task UpdateCategoryAsync_Should_Throw_When_Category_Not_Found()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        _categoryRepoMock
+            .Setup<Task<Category?>>(x => x.GetByIdAsync(id)).ReturnsAsync(It.IsAny<Category>());
+
+        // Act
+        Func<Task> act = async () => await _service.UpdateCategoryAsync(id, It.IsAny<CategoryRequest>());
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>().WithMessage($"Category with id {id} not found");
+    }
+    
+    [Fact]
     public async Task UpdateCategoryAsync_Should_Update_Category()
     {
         // Arrange
@@ -241,22 +300,6 @@ public class CategoryServiceTests
 
         // Assert
         _categoryRepoMock.VerifyAll();
-    }
-    
-    [Fact]
-    public async Task UpdateCategoryAsync_Should_Throw_When_Category_Not_Found()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-
-        _categoryRepoMock
-            .Setup<Task<Category?>>(x => x.GetByIdAsync(id)).ReturnsAsync(It.IsAny<Category>());
-
-        // Act
-        Func<Task> act = async () => await _service.UpdateCategoryAsync(id, It.IsAny<CategoryRequest>());
-
-        // Assert
-        await act.Should().ThrowAsync<KeyNotFoundException>().WithMessage($"Category with id {id} not found");
     }
     
     [Fact]

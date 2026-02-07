@@ -218,6 +218,39 @@ public class ProductServiceTests
                 It.Is<string>(s => s == "Failed to create product")),
             Times.Once);
     }
+    
+    [Fact]
+    public async Task CreateProductAsync_Should_Throw_When_Product_With_That_Name_Already_Exists()
+    {
+        var categoryId = Guid.NewGuid();
+        var request = GetProductRequest(categoryId);
+
+        var category = new Category
+        {
+            Id = categoryId,
+            Name = "Test"
+        };
+
+        _categoryRepoMock
+            .Setup(x => x.GetByIdAsync(categoryId))
+            .ReturnsAsync(category);
+        
+        _productRepoMock.Setup(x => x.AnyAsync(
+            It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>()
+        )).ReturnsAsync(true);
+        
+        var productResponse = new ProductResponse();
+        _mapperMock
+            .Setup(x => x.Map<ProductResponse>(It.IsAny<Product>()))
+            .Returns(productResponse);
+
+        // Act
+        Func<Task> act = async () => await _service.CreateProductAsync(request);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("A product with that name already exists!");
+        
+    }
 
     [Fact]
     public async Task GetAllProductsFromRedisAsync_Should_Return_Paginated_Response()
@@ -385,7 +418,7 @@ public class ProductServiceTests
     }
     
     [Fact]
-    public async Task UpdateProductAsync_Should_Update_Product_And_Commit()
+    public async Task UpdateProductAsync_Should_Throw_When_Product_With_That_Name_Already_Exists()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -417,22 +450,16 @@ public class ProductServiceTests
                 It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
                 It.IsAny<IEnumerable<Expression<Func<Product, object>>>>()))
             .ReturnsAsync(product);
-
-        _mapperMock
-            .Setup(x => x.Map<ProductResponse>(It.IsAny<Product>()))
-            .Returns(new ProductResponse());
+        
+        _productRepoMock.Setup(x => x.AnyAsync(
+            It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>()
+        )).ReturnsAsync(true);
 
         // Act
-        await _service.UpdateProductAsync(id, request);
+        Func<Task> act = async () => await _service.UpdateProductAsync(id, request);
 
         // Assert
-        _unitOfWorkMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
-        _productRepoMock.Verify(x => x.UpdateAsync(product), Times.Once);
-        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
-        _unitOfWorkMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
-        _cacheMock.Verify(x =>
-                x.SetJsonAsync(It.IsAny<string>(), It.IsAny<ProductResponse>(), It.IsAny<int?>()),
-            Times.Once);
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("A product with that name already exists!");
     }
     
     [Fact]
@@ -521,6 +548,57 @@ public class ProductServiceTests
         await act.Should().ThrowAsync<Exception>();
 
         _unitOfWorkMock.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+    }
+    
+    [Fact]
+    public async Task UpdateProductAsync_Should_Update_Product_And_Commit()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        var product = GetProduct(id, categoryId);
+
+        var request = new ProductUpdateRequest
+        {
+            Name = "Phone",
+            Description = "Phone",
+            CategoryId = categoryId,
+            SellingPrice = 120000,
+            Stock = 5,
+            BuyPrice = 100000,
+            Pictures =
+            [
+                new()
+                {
+                    Type = 1,
+                    Url = "dummy"
+                }
+            ],
+            DeletePictureIds = new HashSet<Guid>()
+        };
+
+        _productRepoMock
+            .Setup(x => x.GetAsync(
+                It.IsAny<IEnumerable<Expression<Func<Product, bool>>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Product, object>>>>()))
+            .ReturnsAsync(product);
+
+        _mapperMock
+            .Setup(x => x.Map<ProductResponse>(It.IsAny<Product>()))
+            .Returns(new ProductResponse());
+
+        // Act
+        await _service.UpdateProductAsync(id, request);
+
+        // Assert
+        _unitOfWorkMock.Verify(x => x.BeginTransactionAsync(), Times.Once);
+        _productRepoMock.Verify(x => x.UpdateAsync(product), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.CommitTransactionAsync(), Times.Once);
+        _cacheMock.Verify(x =>
+                x.SetJsonAsync(It.IsAny<string>(), It.IsAny<ProductResponse>(), It.IsAny<int?>()),
+            Times.Once);
     }
     
     [Fact]
