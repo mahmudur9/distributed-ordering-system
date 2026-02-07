@@ -7,12 +7,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\ObjectStoreService.Application\ObjectStoreService.Application.csproj" />
         <ProjectReference Include="..\ObjectStoreService.Domain\ObjectStoreService.Domain.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Grpc.AspNetCore" Version="2.76.0"/>
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6">
