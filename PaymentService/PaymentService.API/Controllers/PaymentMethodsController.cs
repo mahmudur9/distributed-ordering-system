@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.Application.IServices;
 using PaymentService.Application.Requests;
@@ -27,6 +28,7 @@ public class PaymentMethodsController : ControllerBase
         return Ok(await _paymentMethodService.GetPaymentMethodByIdAsync(id));
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(PaymentMethodRequest paymentMethodRequest)
     {
@@ -34,6 +36,7 @@ public class PaymentMethodsController : ControllerBase
         return Ok("Payment method created");
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, PaymentMethodRequest paymentMethodRequest)
     {
@@ -41,6 +44,7 @@ public class PaymentMethodsController : ControllerBase
         return Ok("Payment method updated");
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {

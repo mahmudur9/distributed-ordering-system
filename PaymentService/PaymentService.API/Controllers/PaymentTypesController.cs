@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.Application.IServices;
 using PaymentService.Application.Requests;
@@ -27,6 +28,7 @@ public class PaymentTypesController : ControllerBase
         return Ok(await  _paymentTypeService.GetPaymentTypeByIdAsync(id));
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(PaymentTypeRequest paymentTypeRequest)
     {
@@ -34,6 +36,7 @@ public class PaymentTypesController : ControllerBase
         return Ok("Payment type created");
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, PaymentTypeRequest paymentTypeRequest)
     {
@@ -41,6 +44,7 @@ public class PaymentTypesController : ControllerBase
         return Ok("Payment type updated");
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {

@@ -1,5 +1,7 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.OpenApi.Models;
 using PaymentService.API.Grpc;
 using PaymentService.API.Middlewares;
 using PaymentService.Application.Extensions;
@@ -54,6 +56,15 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// Remote jwt auth start
+builder.Services
+    .AddAuthentication("RemoteJwt")
+    .AddScheme<AuthenticationSchemeOptions, RemoteJwtAuthHandler>(
+        "RemoteJwt", null);
+
+builder.Services.AddAuthorization();
+// Remote jwt auth end
+
 // Configure serilog
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -71,7 +82,40 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "PaymentService API",
+        Version = "v1"
+    });
+
+    // 🔐 Add JWT Authentication support
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer {your JWT token}'"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 

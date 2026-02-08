@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.Application.IServices;
 using PaymentService.Application.Requests;
@@ -27,6 +28,7 @@ public class PaymentsController : ControllerBase
         return Ok(await _paymentService.GetPaymentByIdAsync(id));
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
