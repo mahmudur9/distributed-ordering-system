@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProductService.Application.IServices;
 using ProductService.Application.Requests;
@@ -27,6 +28,7 @@ public class CategoriesController : ControllerBase
         return Ok(await _categoryService.GetCategoryByIdAsync(id));
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(CategoryRequest categoryRequest)
     {
@@ -34,6 +36,7 @@ public class CategoriesController : ControllerBase
         return Ok("Category created.");
     }
     
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, CategoryRequest categoryRequest)
     {
@@ -41,6 +44,7 @@ public class CategoriesController : ControllerBase
         return Ok("Category updated.");
     }
     
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
