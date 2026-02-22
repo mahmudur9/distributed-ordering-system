@@ -8,6 +8,9 @@ A scalable **distributed microservices backend** built with **.NET 8**, followin
 - **Entity Framework**
 - **SQL Server**
 
+**Rate Limiter**
+- **Concurrency Rate Limiter**
+
 **Tests**
 - **UnitTest**
 
