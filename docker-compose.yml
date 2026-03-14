@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  nginx-service:
+    image: nginx
+    container_name: nginx
+    ports:
+      - "5000:6000"
+      - "8003:8003"
+    depends_on:
+      - payment-service1
+      - payment-service2
+    networks:
+      - ordering-system-network
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      
   product-service:
     build:
       context: ./ProductService
@@ -36,26 +50,22 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=OrderService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
       - Services__ProductService=http://product-service-api:5000
-      - Services__PaymentService=http://payment-service-api:5000
+      - Services__PaymentService=http://nginx:6000
       - Services__UserService=http://user-service-api:8000
     depends_on:
       - product-service
       - user-service
-      - payment-service
     networks:
       - ordering-system-network
     volumes:
       - ./logs:/app/logs
   
-  payment-service:
+  payment-service1:
     build:
       context: ./PaymentService
       dockerfile: Dockerfile
     image: payment-service
-    container_name: payment-service-api
-    ports:
-      - "8003:8000"
-      - "5003:5000"
+    container_name: payment-service-api1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=PaymentService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
@@ -65,7 +75,24 @@ services:
     networks:
       - ordering-system-network
     volumes:
-      - ./logs:/app/logs  
+      - ./logs:/app/logs
+  
+  payment-service2:
+    build:
+      context: ./PaymentService
+      dockerfile: Dockerfile
+    image: payment-service
+    container_name: payment-service-api2
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=PaymentService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+      - Services__UserService=http://user-service-api:8000
+    depends_on:
+      - user-service
+    networks:
+      - ordering-system-network
+    volumes:
+      - ./logs:/app/logs
       
   user-service:
     build:
