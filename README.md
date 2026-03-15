@@ -8,7 +8,7 @@ A scalable **distributed microservices backend** built with **.NET 8**, followin
 - **Entity Framework**
 - **SQL Server**
 
-**API Gateway**
+**API Gateway and Load Balancer**
 - **NGINX**
 
 **Rate Limiter**
