@@ -5,29 +5,35 @@ services:
     image: nginx
     container_name: nginx
     ports:
-      - "5000:6000"
+      - "5001:6001"
+      - "5002:6002"
       - "8003:8003"
+      - "8002:8002"
+      - "8001:8001"
+      - "8004:8004"
+      - "8005:8005"
     depends_on:
       - payment-service1
       - payment-service2
+      - order-service1
+      - order-service2
+      - product-service1
+      - product-service2
     networks:
       - ordering-system-network
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
       
-  product-service:
+  product-service1:
     build:
       context: ./ProductService
       dockerfile: Dockerfile
     image: product-service
-    container_name: product-service-api
-    ports:
-      - "8001:8000"
-      - "5001:5000"
+    container_name: product-service-api1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=ProductService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
-      - Services__UserService=http://user-service-api:8000
+      - Services__UserService=http://nginx:8004
       - Services__ObjectStoreService=http://object-store-service-api:8000
       - Services__RedisService=ordering-system-redis:6379,password=Mahmudur123
     depends_on:
@@ -38,23 +44,64 @@ services:
     volumes:
       - ./logs:/app/logs
       
-  order-service:
+  product-service2:
+    build:
+      context: ./ProductService
+      dockerfile: Dockerfile
+    image: product-service
+    container_name: product-service-api2
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=ProductService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+      - Services__UserService=http://nginx:8004
+      - Services__ObjectStoreService=http://object-store-service-api:8000
+      - Services__RedisService=ordering-system-redis:6379,password=Mahmudur123
+    depends_on:
+      - sqlserver
+      - redis
+    networks:
+      - ordering-system-network
+    volumes:
+      - ./logs:/app/logs    
+      
+  order-service1:
     build:
       context: ./OrderService
       dockerfile: Dockerfile
     image: order-service
-    container_name: order-service-api
-    ports:
-      - "8002:8000"
+    container_name: order-service-api1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=OrderService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
-      - Services__ProductService=http://product-service-api:5000
-      - Services__PaymentService=http://nginx:6000
-      - Services__UserService=http://user-service-api:8000
+      - Services__ProductService=http://nginx:6002
+      - Services__PaymentService=http://nginx:6001
+      - Services__UserService=http://nginx:8004
     depends_on:
-      - product-service
-      - user-service
+      - product-service1
+      - product-service2
+      - user-service1
+      - user-service2
+    networks:
+      - ordering-system-network
+    volumes:
+      - ./logs:/app/logs
+  order-service2:
+    build:
+      context: ./OrderService
+      dockerfile: Dockerfile
+    image: order-service
+    container_name: order-service-api2
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=OrderService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+      - Services__ProductService=http://nginx:6002
+      - Services__PaymentService=http://nginx:6001
+      - Services__UserService=http://nginx:8004
+    depends_on:
+      - product-service1
+      - product-service2
+      - user-service1
+      - user-service2
     networks:
       - ordering-system-network
     volumes:
@@ -69,9 +116,10 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=PaymentService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
-      - Services__UserService=http://user-service-api:8000
+      - Services__UserService=http://nginx:8004
     depends_on:
-      - user-service
+      - user-service1
+      - user-service2
     networks:
       - ordering-system-network
     volumes:
@@ -86,22 +134,21 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=PaymentService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
-      - Services__UserService=http://user-service-api:8000
+      - Services__UserService=http://nginx:8004
     depends_on:
-      - user-service
+      - user-service1
+      - user-service2
     networks:
       - ordering-system-network
     volumes:
       - ./logs:/app/logs
       
-  user-service:
+  user-service1:
     build:
       context: ./UserService
       dockerfile: Dockerfile
     image: user-service
-    container_name: user-service-api
-    ports:
-      - "8004:8000"
+    container_name: user-service-api1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=UserService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
@@ -113,17 +160,32 @@ services:
     volumes:
       - ./logs:/app/logs
       
-  object-store-service:
+  user-service2:
+    build:
+      context: ./UserService
+      dockerfile: Dockerfile
+    image: user-service
+    container_name: user-service-api2
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=UserService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+    depends_on:
+      - sqlserver
+      - redis
+    networks:
+      - ordering-system-network
+    volumes:
+      - ./logs:/app/logs    
+      
+  object-store-service1:
     build:
       context: ./ObjectStoreService
       dockerfile: Dockerfile
     image: object-store-service
-    container_name: object-store-service-api
+    container_name: object-store-service-api1
     volumes:
       - ./wwwroot:/app/wwwroot
       - ./logs:/app/logs
-    ports:
-      - "8005:8000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=ObjectStoreService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
@@ -131,6 +193,23 @@ services:
       - sqlserver
     networks:
       - ordering-system-network
+      
+  object-store-service2:
+    build:
+      context: ./ObjectStoreService
+      dockerfile: Dockerfile
+    image: object-store-service
+    container_name: object-store-service-api2
+    volumes:
+      - ./wwwroot:/app/wwwroot
+      - ./logs:/app/logs
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=ObjectStoreService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
+    depends_on:
+      - sqlserver
+    networks:
+      - ordering-system-network    
       
   redis:
     image: redis
@@ -170,7 +249,8 @@ services:
     ports:
       - "9090:9090"
     depends_on:
-      - product-service
+      - product-service1
+      - product-service2
     networks:
       - ordering-system-network
       
