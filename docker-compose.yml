@@ -34,7 +34,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=ProductService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
       - Services__UserService=http://nginx:8004
-      - Services__ObjectStoreService=http://object-store-service-api:8000
+      - Services__ObjectStoreService=http://nginx:8005
       - Services__RedisService=ordering-system-redis:6379,password=Mahmudur123
     depends_on:
       - sqlserver
@@ -54,7 +54,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=ordering-system-mssql;Database=ProductService;User Id=sa;Password=Mahmudur123;TrustServerCertificate=True;
       - Services__UserService=http://nginx:8004
-      - Services__ObjectStoreService=http://object-store-service-api:8000
+      - Services__ObjectStoreService=http://nginx:8005
       - Services__RedisService=ordering-system-redis:6379,password=Mahmudur123
     depends_on:
       - sqlserver
