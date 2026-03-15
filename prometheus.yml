@@ -4,20 +4,20 @@ global:
 scrape_configs:
   - job_name: "product-service-api"
     static_configs:
-      - targets: ["product-service-api:8000"]
+      - targets: ["nginx:8001"]
       
   - job_name: "order-service-api"
     static_configs:
-      - targets: ["order-service-api:8000"]
+      - targets: ["nginx:8002"]
       
   - job_name: "user-service-api"
     static_configs:
-      - targets: ["user-service-api:8000"]
+      - targets: ["nginx:8004"]
       
   - job_name: "payment-service-api"
     static_configs:
-      - targets: ["payment-service-api:8000"]
+      - targets: ["nginx:8003"]
       
   - job_name: "object-store-service-api"
     static_configs:
-      - targets: ["object-store-service-api:8000"]
+      - targets: ["nginx:8005"]
