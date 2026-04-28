@@ -1,10 +1,10 @@
 # Distributed Ordering System
-A scalable **distributed microservices backend** built with **.NET 8**, following **Clean Architecture principles**, designed for high performance, observability, and secure communication.  
+A scalable **distributed microservices backend** built with **.NET 10**, following **Clean Architecture principles**, designed for high performance, observability, and secure communication.  
 
 ## 📦 Tech Stack
 
 **Backend**
-- **.NET 8 (.NET Core Web API)**
+- **.NET 10 (.NET Core Web API)**
 - **Entity Framework**
 - **SQL Server**
 
